@@ -22,15 +22,15 @@
 % convergenceStr: is a str deliver the message of convergence
 
 
-function [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, isPlotStatus, reduceInterval)
-
+function [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, NameValueArgs)
 % check input
-if nargin < 5
-    reduceInterval = 1;
-end
-
-if nargin < 4
-    isPlotStatus = true;
+arguments % name value pair
+    Parameter
+    tSpan
+    samplingFrequency
+    NameValueArgs.isPlotStatus = true; 
+    NameValueArgs.reduceInterval = 1;
+    NameValueArgs.calculateMethod = 'RK';
 end
 
 %%
@@ -46,27 +46,45 @@ t = linspace(tStart,tEnd,tNum);
 
 % initial the response
 dofNum   = Parameter.Mesh.dofNum;
-q = zeros(dofNum, tNum); % for saving response
-dq = zeros(dofNum, tNum);
 yn = zeros(dofNum,1); % initial condition of differential euqtion
 dyn = zeros(dofNum,1);
-equation = @(tn,yn,dyn)dynamicEquation(tn,yn,dyn,Parameter);
+
 convergenceStr = [];
-% calculate response
-for iT = 1:1:tNum
-    [q(:,iT), dq(:,iT)] = rungeKutta(equation, t(iT), yn, dyn, step);
-    yn = q(:,iT);
-    dyn = dq(:,iT);
-    if isnan(dyn)
-        convergenceStr = ['t=', num2str(t(iT)), 's non-convergent'];
-        break
-    end
-end
+% calculate with classic Runge-Kutta Method
+if strcmp(NameValueArgs.calculateMethod, 'RK')
+    q = zeros(dofNum, tNum); % for saving response
+    dq = zeros(dofNum, tNum);
+    equation = @(tn,yn,dyn)dynamicEquation(tn,yn,dyn,Parameter);
+    % calculate response
+    for iT = 1:1:tNum
+        [q(:,iT), dq(:,iT)] = rungeKutta(equation, t(iT), yn, dyn, step);
+        yn = q(:,iT);
+        dyn = dq(:,iT);
+        if isnan(dyn)
+            convergenceStr = ['t=', num2str(t(iT)), 's non-convergent'];
+            break
+        end % end if isnan
+    end % end for iT
+elseif strcmp(NameValueArgs.calculateMethod, 'ode45')
+    odefun = @(tn, yn) [yn(dofNum+1:end, 1); dynamicEquation(tn,yn(1:dofNum, 1), yn(dofNum+1:end, 1), Parameter)];
+    [~, yode] = ode45(odefun, t, [yn; dyn]);
+    yode = yode';
+    q = yode(1:dofNum, :);
+    dq = yode(dofNum+1:end, :);
+elseif strcmp(NameValueArgs.calculateMethod, 'ode15s')
+    odefun = @(tn, yn) [yn(dofNum+1:end, 1); dynamicEquation(tn,yn(1:dofNum, 1), yn(dofNum+1:end, 1), Parameter)];
+    [~, yode] = ode15s(odefun, t, [yn; dyn]);
+    yode = yode';
+    q = yode(1:dofNum, :);
+    dq = yode(dofNum+1:end, :);
+else
+    error('Error: wrong nameValue, please use RK or ode45 or ode15s.')
+end % end if NameValueArgs.calculateMethod
 
 %%
 
 %reduce data (re-sampling)
-reduce_index = 1 : reduceInterval : size(q, 2); % index of the sampling data
+reduce_index = 1 : NameValueArgs.reduceInterval : size(q, 2); % index of the sampling data
 if reduce_index(end) ~= size(q, 2)
    reduce_index = [reduce_index, size(q, 2)]; 
 end
@@ -77,7 +95,7 @@ t  = t(:,reduce_index);
 %% 
 
 % calculate the acceleration, rotational velocity and phase
-if isPlotStatus
+if NameValueArgs.isPlotStatus
     % load constants
     Status   = Parameter.Status;
     shaftNum = Parameter.Shaft.amount;
@@ -125,6 +143,7 @@ if isPlotStatus
     % plot running status
     plotRunningStatus(t,status)
 end
+
 
 
 end

@@ -16,24 +16,24 @@ function InitialParameter = inputEssentialParameter()
 
 % typing the parameter about shaft
 Shaft.amount            = 2;
-Shaft.totalLength       = [0.85; 0.382]; % all vectors in column (m)
+Shaft.totalLength       = [865; 382]*10^-3; % all vectors in column (m)
 Shaft.dofOfEachNodes    = 4 * ones(Shaft.amount,1);
-Shaft.outerRadius       = [0.01; 0.0325]; % m
-Shaft.innerRadius       = [0; 0.02]; % m
-Shaft.density           = 7890 * ones(Shaft.amount,1); % kg/m^3
-Shaft.elasticModulus    = 209e9 * ones(Shaft.amount,1); % Pa
-Shaft.poissonRatio      = 0.269 * ones(Shaft.amount,1);
+Shaft.outerRadius       = [10; 32.5]*10^-3; % m
+Shaft.innerRadius       = [0; 20]*10^-3; % m
+Shaft.density           = 7850 * ones(Shaft.amount,1); % kg/m^3
+Shaft.elasticModulus    = 210e9 * ones(Shaft.amount,1); % Pa
+Shaft.poissonRatio      = 0.296 * ones(Shaft.amount,1);
 checkInputData(Shaft)
-Shaft.rayleighDamping   = [10, 0]; % [alpha, beta] CShaft = alpha*(MShaft+MDisk) + beta*KShaft
+Shaft.rayleighDamping   = [35.261, 5.3309e-5]; % [alpha, beta] CShaft = alpha*(MShaft+MDisk) + beta*KShaft
 
 %%
 
 % typing the parameter about running status
-Status.ratio            = [-1.3]; % [v-shaft2/v-shaft1; v-shaft3/v-shaft1]
-Status.vmax             = 500; % rad/s, the maximum rotational speed for shaft 1
-Status.acceleration     = 100; % rad/s^2, acceleration of shaft 1
-Status.duration         = 100; % s, the duration of shaft 1 in vmax
-Status.isDeceleration   = false; % boolean, add a deceleration in status
+Status.ratio            = [1.2]; % [v-shaft2/v-shaft1; v-shaft3/v-shaft1]
+Status.vmax             = 100*2*pi; % rad/s, the maximum rotational speed for shaft 1
+Status.acceleration     = 4.2*2*pi; % rad/s^2, acceleration of shaft 1
+Status.duration         = 10; % s, the duration of shaft 1 in vmax
+Status.isDeceleration   = true; % boolean, add a deceleration in status
 Status.vmin             = 0; % s, the minimum speed afterdeceleration
 
 % check input
@@ -45,13 +45,14 @@ end
 
 % typing the parameter about disk
 Disk.amount             = 4;
-Disk.inShaftNo          = [1*ones(1,2), 2*ones(1,2)]'; % disks in the i-th shaft
+Disk.inShaftNo          = [1, 1, 2, 2]'; % disks in the i-th shaft
 Disk.dofOfEachNodes     = 4 * ones(Disk.amount,1);
-Disk.radius             = [0.1215*ones(1,2), 0.124*ones(1,2)]'; % m
+Disk.innerRadius        = [10, 10, 32.5, 32.5]' *10^-3; % m
+Disk.outerRadius        = [125, 125, 125, 125]' *10^-3; % m
 Disk.thickness          = [0.015*ones(1,4)]'; % m
-Disk.positionOnShaftDistance = 1e-3 * [230.5, 664.5, 120.5, 225.5]'; %from left end (m)
-Disk.density            = [7890*ones(1,4)]'; % kg/m^3
-Disk.eccentricity       = [1e-3*ones(1,4)]'; % m
+Disk.positionOnShaftDistance = 1e-3 * [173.5, 621.5, 150.5, 292.5]'; %from left end (m)
+Disk.density            = [7850*ones(1,4)]'; % kg/m^3
+Disk.eccentricity       = [0.0979e-3*ones(1,4)]'; % m
 
 % check input
 checkInputData(Disk)

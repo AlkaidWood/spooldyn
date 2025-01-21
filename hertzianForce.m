@@ -30,22 +30,22 @@
 % fHertz: is a dofNum*1 vector denoting the Hertzian force
 function fHertz = hertzianForce(qn, tn, domega)
  
-nb = [8   8   8  10   8   8];
-ri = [0.0288      0.0288      0.0288      0.0755      0.0288      0.0288];
-ro = [0.047       0.047       0.047        0.11       0.047       0.047];
-delta0 = [1e-05       1e-05       1e-05     1.4e-05       1e-05       1e-05];
-kHertz = [10800000000  10800000000  10800000000  14900000000  10800000000  10800000000];
-n = [1.5         1.5         1.5         1.5         1.5         1.5];
-omegaiNo = [1  1  1  2  1  1];
-omegaoNo = [3  3  3  3  2  2];
-hertzDof = [1   5  33  69  13  21;...
-            107   77   81   91   95   65]';
+nb = [13  13  17  13];
+ri = [0.01        0.01        0.03        0.01];
+ro = [0.0235      0.0235       0.055      0.0235];
+delta0 = [1e-06       1e-06       1e-06       7e-06];
+kHertz = [10800000000  10800000000  14900000000  10800000000];
+n = [1.5         1.5         1.5         1.5];
+omegaiNo = [1  1  2  1];
+omegaoNo = [3  3  3  2];
+hertzDof = [5  21  33  13;...
+            49  53  57  61]';
  
 domega = [domega, 0]; % add 1 row for adapting the bearing connecting the ground
 qn = [qn; 0; 0]; % add 2 rows for adapting the bearing connecting the ground
  
-fHertz2 = zeros(108,1); % add 2 rows for adapting the bearing connecting the ground
-for iHertz = 1:1:6
+fHertz2 = zeros(64,1); % add 2 rows for adapting the bearing connecting the ground
+for iHertz = 1:1:4
     x = qn(hertzDof(iHertz,1)) - qn(hertzDof(iHertz,2)); % displacement of the Inner shaft - that of the Outer shaft
     y = qn(hertzDof(iHertz,1)+1) - qn(hertzDof(iHertz,2)+1);
     f = hertzianForceEq(tn, x, y, domega(omegaiNo(iHertz)), domega(omegaoNo(iHertz)), nb(iHertz), ri(iHertz), ro(iHertz), delta0(iHertz), kHertz(iHertz), n(iHertz));

@@ -76,9 +76,8 @@ for iShaft = 1:1:Shaft.amount
             positionX = Disk.positionOnShaftDistance(iDisk)...
                         + offsetPosition(iShaft);
             position = [positionX, 0, 0]; % [x, y, z]
-            outerRadius = Disk.radius(iDisk);
-            % the inner radius of disk equal to the outer radius of shaft
-            innerRadius = Shaft.outerRadius(iShaft);
+            outerRadius = Disk.outerRadius(iDisk);
+            innerRadius = Disk.innerRadius(iDisk);
             length = Disk.thickness(iDisk);
             NODES = 30;
             axisName = 'x';
@@ -94,7 +93,7 @@ for iShaft = 1:1:Shaft.amount
                          + offsetPosition(iShaft);
             position = [positionX, 0, 0]; % [x, y, z]
             radius = Shaft.outerRadius(iShaft);
-            height = max(Disk.radius) * 1.25;
+            height = max(Disk.outerRadius) * 1.25;
             width = height;
             thickness = min(Disk.thickness) * 0.6;
             NODES = 15;

@@ -27,7 +27,7 @@
 function [Me, Ge, Ne] = diskElement(ADisk)
 
 % check the input
-fieldName = {'dofOfEachNodes', 'radius', 'density', 'thickness'};
+fieldName = {'dofOfEachNodes', 'outerRadius', 'innerRadius', 'density', 'thickness'};
 hasFieldName = isfield(ADisk, fieldName);
 if length(hasFieldName) ~= sum(hasFieldName)
     error('Incorrect field names for input struct')
@@ -36,13 +36,14 @@ end
 %%
 
 % calculate the constants
-r = ADisk.radius;
+r1 = ADisk.innerRadius;
+r2 = ADisk.outerRadius;
 thickness = ADisk.thickness;
 rho = ADisk.density;
 eDisk = ADisk.eccentricity;
-m = (pi*r^2) * thickness * rho;
-Id = 1/4 * m * r^2;
-Ip = 1/2 * m * r^2;
+m = (r2^2 - r1^2) * pi* thickness * rho;
+Id = 1/4 * m * (r1^2+r2^2);
+Ip = 1/2 * m * (r1^2+r2^2);
 
 %%
 

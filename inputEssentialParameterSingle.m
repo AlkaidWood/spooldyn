@@ -47,7 +47,8 @@ end
 Disk.amount             = 2;
 Disk.inShaftNo          = [1; 1]; % disks in the i-th shaft
 Disk.dofOfEachNodes     = 4 * ones(Disk.amount,1);
-Disk.radius             = 0.125 * ones(Disk.amount,1); % m
+Disk.innerRadius        = 0 * ones(Disk.amount,1); % m
+Disk.outerRadius        = 0.125 * ones(Disk.amount,1); % m
 Disk.thickness          = [0.00273; 0.00273]; % m
 Disk.positionOnShaftDistance = [0.5; 1]; %from left end (m)
 Disk.density            = 7850 * ones(Disk.amount,1); % kg/m^3

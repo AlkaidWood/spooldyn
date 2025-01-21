@@ -7,8 +7,6 @@ close all
 InitialParameter = inputEssentialParameter(); % first, input essential parameters
 InitialParameter = inputBearingHertz(InitialParameter);
 InitialParameter = inputIntermediateBearing(InitialParameter);
-InitialParameter = inputLoosingBearing(InitialParameter);
-
 
 % If you need change some parameters, please change the data in the struct:
 % InitialParameter, then use establishModel( ) to get the different models
@@ -30,13 +28,19 @@ generateDynamicEquation(Parameter);
 
 TSTART = 0;
 TEND = 1;
-SAMPLINGFREQUENCY = 155000;
+SAMPLINGFREQUENCY = 20000;
 ISPLOTSTATUS = true;
-REDUCEINTERVAL = 50;
+REDUCEINTERVAL = 1;
+calculateMethod = 'ode15s'; % RK: classic Runge-Kutta; ode45: using ode45(); ode15s: using ode15s()
 tic
-[q, dq, t, convergenceStr] = calculateResponse(Parameter, [TSTART, TEND], SAMPLINGFREQUENCY,ISPLOTSTATUS,REDUCEINTERVAL);
+[q, dq, t, convergenceStr] = calculateResponse(...
+    Parameter,...
+    [TSTART, TEND],...
+    SAMPLINGFREQUENCY,...
+    'isPlotStatus', ISPLOTSTATUS,...
+    'reduceInterval', REDUCEINTERVAL, ...
+    'calculateMethod',calculateMethod);
 toc
-
 if ~isempty(convergenceStr)
     fprintf('%s \n', convergenceStr)
 end
@@ -51,7 +55,7 @@ SwitchFigure.displacement       = true;
 SwitchFigure.axisTrajectory     = false;
 SwitchFigure.axisTrajectory3d   = false;
 SwitchFigure.phase              = false;
-SwitchFigure.fftSteady          = true;
+SwitchFigure.fftSteady          = false;
 SwitchFigure.fftTransient       = false;
 SwitchFigure.poincare           = false;
 SwitchFigure.saveFig            = false;

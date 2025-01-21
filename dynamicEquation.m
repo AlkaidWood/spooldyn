@@ -18,14 +18,22 @@ function ddyn = dynamicEquation(tn, yn, dyn, Parameter)
  
  
 % calculate phase, speed and acceleration
-if tn <= 5
-   ddomega = [100 -130];
-   domega  = ddomega .* tn ;
-   omega   = 0.5 * ddomega * tn^2;
+if tn <= 23.8095
+    ddomega = [26.3894      31.6673];
+    domega  = [26.3894      31.6673] * tn;
+    omega   = 0.5 * [26.3894      31.6673] * tn^2;
+elseif tn <= 33.8095
+    ddomega = [0  0];
+    domega  = [628.3185      753.9822];
+    omega   = [7479.9825       8975.979] + [628.3185      753.9822] * (tn - 23.8095 );
+elseif tn <= 57.619
+    ddomega = -[26.3894      31.6673];
+    domega  = [628.3185      753.9822] - [26.3894      31.6673] * (tn - 33.8095 );
+    omega   = [13763.1678      16515.8014] + [628.3185      753.9822]*(tn - 33.8095 ) - 0.5*[26.3894      31.6673]*(tn - 33.8095 )^2;
 else
-   ddomega = zeros(1,2);
-   domega  = [500 -650];
-   omega   = [1250 -1625] + domega .* (tn-5);
+    ddomega = [0  0];
+    domega  = [0  0];
+    omega   = [21243.1503      22499.7874] + [0  0]*(tn - 57.619 );
 end
  
  
@@ -34,28 +42,22 @@ M = Parameter.Matrix.mass;
 G = Parameter.Matrix.gyroscopic;
 N = Parameter.Matrix.matrixN;
 Q = Parameter.Matrix.unblanceForce;
-G(1:40, 1:40) = domega(1)*G(1:40, 1:40);
-N(1:40, 1:40) = ddomega(1)*N(1:40, 1:40);
-G(41:76, 41:76) = domega(2)*G(41:76, 41:76);
-N(41:76, 41:76) = ddomega(2)*N(41:76, 41:76);
+K = Parameter.Matrix.stiffness;
+C = Parameter.Matrix.damping;
+G(1:28, 1:28) = domega(1)*G(1:28, 1:28);
+N(1:28, 1:28) = ddomega(1)*N(1:28, 1:28);
+G(29:48, 29:48) = domega(2)*G(29:48, 29:48);
+N(29:48, 29:48) = ddomega(2)*N(29:48, 29:48);
  
  
 % calculate unblance force
 diskInShaftNo = [1  1  2  2];
-Q([9  29  53  61])   = [0.0054887   0.0054887   0.0057169   0.0057169] .* ( ddomega(diskInShaftNo) .* sin(omega(diskInShaftNo)) + domega(diskInShaftNo).^2 .* cos(omega(diskInShaftNo)));
-Q([10  30  54  62]) = [0.0054887   0.0054887   0.0057169   0.0057169] .* (-ddomega(diskInShaftNo) .* cos(omega(diskInShaftNo)) + domega(diskInShaftNo).^2 .* sin(omega(diskInShaftNo)));
- 
- 
-% calculate Hertzian force
-fHertz = hertzianForce(yn, tn, domega);
- 
- 
-% check the loosing bearing. If bearing loose, create the KLoose, CLoose.
-[K, C] = bearingLoosingForce(yn, Parameter.Matrix);
+Q([9  17  37  41])   = [0.00056224  0.00056224  0.00052761  0.00052761] .* ( ddomega(diskInShaftNo) .* sin(omega(diskInShaftNo)) + domega(diskInShaftNo).^2 .* cos(omega(diskInShaftNo)));
+Q([10  18  38  42]) = [0.00056224  0.00056224  0.00052761  0.00052761] .* (-ddomega(diskInShaftNo) .* cos(omega(diskInShaftNo)) + domega(diskInShaftNo).^2 .* sin(omega(diskInShaftNo)));
  
  
 % total force 
-F = Q + fHertz;
+F = Q;
  
  
 % dynamic equation 
