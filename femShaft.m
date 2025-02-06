@@ -1,7 +1,7 @@
 %% femShaft
-% generate the globe mass, stiffness, gyroscopic matrix of shafts
+% generate the globe mass, stiffness, gyroscopic matrix, gravity of shafts
 %% Syntax
-% [M, K, G, N] = femShaft(Shaft, nodeDistance)
+% [M, K, G, N, Fg] = femShaft(Shaft, nodeDistance)
 %% Description
 % Shaft is a struct saving the physical parameters of shafts with fields:
 % amount, dofOfEachNodes, outerRadius, innerRadius, density,
@@ -13,9 +13,11 @@
 %
 % M, K, G, N are mass, stiffness, gyroscopic, N matrix of shafts. (n*n,
 % n is the number of all nodes on shafts)
+%
+% Fg is the gravity vector (n*1)
 
 
-function [M, K, G, N] = femShaft(Shaft, nodeDistance)
+function [M, K, G, N, Fg] = femShaft(Shaft, nodeDistance)
 
 % check input parameters
 Temporary = rmfield(Shaft,'rayleighDamping');
@@ -27,11 +29,12 @@ end % end if
 
 %%
 
-% generate element matrix
+% generate element matrix and vector
 Me = cell(Shaft.amount,1); 
 Ke = cell(Shaft.amount,1);
 Ge = cell(Shaft.amount,1);
 Ne = cell(Shaft.amount,1);
+Fge = cell(Shaft.amount,1);
 
 Temporary = rmfield(Shaft,{'amount','rayleighDamping'}); % for extract part of data of Shaft
 
@@ -44,6 +47,7 @@ for iShaft = 1:1:Shaft.amount
     Ke{iShaft} = cell(elementNum,1);
     Ge{iShaft} = cell(elementNum,1);
     Ne{iShaft} = cell(elementNum,1);
+    Fge{iShaft} = cell(elementNum,1);
     
     % get the physical information of the iShaft 
     AShaft = getStructPiece(Temporary,iShaft,[]);
@@ -55,7 +59,8 @@ for iShaft = 1:1:Shaft.amount
         [Me{iShaft}{iElement},...
          Ke{iShaft}{iElement},...
          Ge{iShaft}{iElement},...
-         Ne{iShaft}{iElement}] = shaftElement(AShaft);
+         Ne{iShaft}{iElement},...
+         Fge{iShaft}{iElement}] = shaftElement(AShaft);
     end % end for iElement
 end % end for iShaft
 
@@ -66,6 +71,7 @@ MiShaft = cell(Shaft.amount,1); % to save the mass matrix of each shaft
 KiShaft = cell(Shaft.amount,1);
 GiShaft = cell(Shaft.amount,1);
 NiShaft = cell(Shaft.amount,1);
+FgiShaft = cell(Shaft.amount,1); % to save the gravity vector of each shaft
 
 for iShaft = 1:1:Shaft.amount
     nodeNum = length(nodeDistance{iShaft});
@@ -78,6 +84,7 @@ for iShaft = 1:1:Shaft.amount
     KiShaft{iShaft} = assembleLinear(Ke{iShaft}, intersectRow, intersectColumn);
     GiShaft{iShaft} = assembleLinear(Ge{iShaft}, intersectRow, intersectColumn);
     NiShaft{iShaft} = assembleLinear(Ne{iShaft}, intersectRow, intersectColumn);
+    FgiShaft{iShaft} = assembleLinear(Fge{iShaft}, intersectRow, ones(1,elementNum-1));
 end
 
 
@@ -90,5 +97,6 @@ M = assembleLinear(MiShaft, intersectRow, intersectColumn);
 K = assembleLinear(KiShaft, intersectRow, intersectColumn);
 G = assembleLinear(GiShaft, intersectRow, intersectColumn);
 N = assembleLinear(NiShaft, intersectRow, intersectColumn);
+Fg = assembleLinear(FgiShaft, intersectRow, 1*ones(1,Shaft.amount-1));
 
 end % end function

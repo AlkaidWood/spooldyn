@@ -30,8 +30,8 @@ Shaft.rayleighDamping   = [35.261, 5.3309e-5]; % [alpha, beta] CShaft = alpha*(M
 
 % typing the parameter about running status
 Status.ratio            = [1.2]; % [v-shaft2/v-shaft1; v-shaft3/v-shaft1]
-Status.vmax             = 100*2*pi; % rad/s, the maximum rotational speed for shaft 1
-Status.acceleration     = 4.2*2*pi; % rad/s^2, acceleration of shaft 1
+Status.vmax             = 1e-5*2*pi; % rad/s, the maximum rotational speed for shaft 1
+Status.acceleration     = 1*2*pi; % rad/s^2, acceleration of shaft 1
 Status.duration         = 10; % s, the duration of shaft 1 in vmax
 Status.isDeceleration   = true; % boolean, add a deceleration in status
 Status.vmin             = 0; % s, the minimum speed afterdeceleration
@@ -93,6 +93,7 @@ checkInputData(Bearing)
 %%
 
 % ComponentSwitch will be changed by corresponding input..() function
+ComponentSwitch.hasGravity = true; % boolean, true-> take gravity into account; false->no gravity in the dynamic equation
 ComponentSwitch.hasIntermediateBearing = false;
 ComponentSwitch.hasLoosingBearing = false;
 ComponentSwitch.hasRubImpact = false;

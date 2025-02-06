@@ -1,9 +1,9 @@
 %% femBearing
-% generate the global mass, stiffness, damping matrix of bearings
+% generate the global mass, stiffness, damping matrix, gravity of bearings
 %% Syntax
-% [M, K, C] = femBearing(Bearing, nodeDof)
+% [M, K, C, Fg] = femBearing(Bearing, nodeDof)
 %
-% [M, K, C, KLoose, CLoose] = femBearing(Bearing, nodeDof, LoosingBearing)
+% [M, K, C, Fg, KLoose, CLoose] = femBearing(Bearing, nodeDof, LoosingBearing)
 %% Description
 % Bearing is a struct saving the physical parameters of bearings with 
 % fields: amount, dofOfEachNodes, stiffness, damping, mass,
@@ -14,6 +14,8 @@
 %
 % M, K, C are mass, stiffness, damping matrix of bearings. (n*n,
 % n is the number of all nodes)
+%
+% Fg is gravity vector of bearings
 %
 % KLoose, CLoose are mass, stiffness, damping matrix of loosing bearings
 
@@ -33,11 +35,12 @@ end
 
 %%
 
-% generate global matrices
+% generate global matrices and vectors
 dofNum = sum(nodeDof);
 M = zeros(dofNum, dofNum);
 K = zeros(dofNum, dofNum);
 C = zeros(dofNum, dofNum);
+Fg = zeros(dofNum, 1);
 
 if ~isempty(LoosingBearing)
     KLoose = zeros(dofNum, dofNum);
@@ -108,15 +111,16 @@ if ~isempty(massBearingIndex)
     MeM = cell(massBearingNum,1);
     KeM = cell(massBearingNum,1); 
     CeM = cell(massBearingNum,1);
+    FgeM = cell(massBearingNum,1);
     
     
-    % generat mass bearing elements
+    % generate mass bearing elements
     for iMBearing = 1:1:massBearingNum
         % get the information of ith mass braring
         AMBearing = getStructPiece(MassBearing,iMBearing,[]); % a normal bearing
         AMBearing.dofOnShaftNode = nodeDof(AMBearing.positionOnShaftNode);
         % generate elements (MeN: Me for mass bearing)
-        [MeM{iMBearing}, KeM{iMBearing}, CeM{iMBearing}]...
+        [MeM{iMBearing}, KeM{iMBearing}, CeM{iMBearing}, FgeM{iMBearing}]...
                                            = bearingElementMass(AMBearing); 
     end
     
@@ -131,6 +135,16 @@ if ~isempty(massBearingIndex)
         K = repeatAdd(K, KeM, iMBearing, mBearingIndex);
         C = repeatAdd(C, CeM, iMBearing, mBearingIndex);
         M = repeatAdd(M, MeM, iMBearing, mBearingIndex);
+    end
+
+    % find the index of element into global vector (for gravity)
+    position = MassBearing.positionNode(:,1);
+    mBearingIndex = findIndex(position,nodeDof);
+
+    % put the gravity of mass bearing elements into global vector (for gravity)
+    for iMBearing = 1:1:massBearingNum
+        indexHere = [mBearingIndex(iMBearing,1), 1];
+        Fg = addElementIn(Fg, FgeM{iMBearing}, indexHere);
     end
     
 end % if ~isempty(massBearingIndex)
@@ -188,12 +202,14 @@ if nargin == 2
     varargout{1} = M;
     varargout{2} = K;
     varargout{3} = C;
+    varargout{4} = Fg;
 elseif nargin == 3
     varargout{1} = M;
     varargout{2} = K;
     varargout{3} = C;
-    varargout{4} = KLoose;
-    varargout{5} = CLoose;
+    varargout{4} = Fg;
+    varargout{5} = KLoose;
+    varargout{6} = CLoose;
 end
 
 %%

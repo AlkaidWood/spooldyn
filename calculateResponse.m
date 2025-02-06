@@ -9,6 +9,8 @@
 %
 % samplingFrequency: is a integer equaling to 1/step
 %
+% q0 is n*1 vector indicating the initial value of the displacement
+%
 % isPlotStatus: is boolean to contol the plot of running status
 %
 % reduceInterval: denotes the re-sampling interval (scaler)
@@ -22,12 +24,13 @@
 % convergenceStr: is a str deliver the message of convergence
 
 
-function [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, NameValueArgs)
+function [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, q0, NameValueArgs)
 % check input
 arguments % name value pair
     Parameter
     tSpan
     samplingFrequency
+    q0 = 0; % initial value of the displacement
     NameValueArgs.isPlotStatus = true; 
     NameValueArgs.reduceInterval = 1;
     NameValueArgs.calculateMethod = 'RK';
@@ -46,8 +49,17 @@ t = linspace(tStart,tEnd,tNum);
 
 % initial the response
 dofNum   = Parameter.Mesh.dofNum;
-yn = zeros(dofNum,1); % initial condition of differential euqtion
 dyn = zeros(dofNum,1);
+if q0==0
+    yn = zeros(dofNum,1); % initial condition of differential euqtion
+else
+    if length(q0)~=dofNum
+        error('Wrong dimension of the initial value. The dimension should equal to total dof number.')
+    else
+        yn = q0;
+    end % end if 
+end % end if
+
 
 convergenceStr = [];
 % calculate with classic Runge-Kutta Method

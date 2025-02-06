@@ -62,27 +62,27 @@ end
 %%
 
 % generate FEM matrices of shaft
-[MShaft, KShaft, GShaft, NShaft] = femShaft( Parameter.Shaft,...
-                                             Parameter.Mesh.nodeDistance );
+[MShaft, KShaft, GShaft, NShaft, FgShaft] = femShaft( Parameter.Shaft,...
+                                                      Parameter.Mesh.nodeDistance );
 
 %%
 
 % generate FEM matrices of disk 
-[MDisk, GDisk, NDisk, QDisk] = femDisk( Parameter.Disk,...
-                                        [Parameter.Mesh.Node.dof] );
+[MDisk, GDisk, NDisk, QDisk, FgDisk] = femDisk( Parameter.Disk,...
+                                                [Parameter.Mesh.Node.dof] );
                              
 
 %%
 
 % generate FEM matrices of bearing
 if ~InitialParameter.ComponentSwitch.hasLoosingBearing
-    [MBearing, KBearing, CBearing] = femBearing( Parameter.Bearing,...
-                                               [Parameter.Mesh.Node.dof] );
+    [MBearing, KBearing, CBearing, FgBearing] = femBearing( Parameter.Bearing,...
+                                                            [Parameter.Mesh.Node.dof] );
 else
-    [MBearing, KBearing, CBearing, KLBearing, CLBearing] = femBearing( ...
-                                                Parameter.Bearing,...
-                                               [Parameter.Mesh.Node.dof],...
-                                                Parameter.LoosingBearing);
+    [MBearing, KBearing, CBearing, FgBearing, KLBearing, CLBearing] = femBearing( ...
+                                            Parameter.Bearing,...
+                                           [Parameter.Mesh.Node.dof],...
+                                            Parameter.LoosingBearing);
 end
                                          
 
@@ -92,8 +92,9 @@ end
 % generate FEM matrices of intermediate bearing
 KInterBearing = zeros( length(MDisk) );
 CInterBearing = zeros( length(MDisk) );
+FgInterBearing = zeros(length(MDisk), 1);
 if Parameter.ComponentSwitch.hasIntermediateBearing
-    [MInterBearing, KInterBearing, CInterBearing] = femInterBearing( ...
+    [MInterBearing, KInterBearing, CInterBearing, FgInterBearing] = femInterBearing( ...
             Parameter.IntermediateBearing, [Parameter.Mesh.Node.dof] );
 end
 
@@ -108,6 +109,7 @@ if diskDofNum > shaftDofNum
     KShaft = blkdiag( KShaft,zeros(diskDofNum - shaftDofNum) );
     GShaft = blkdiag( GShaft,zeros(diskDofNum - shaftDofNum) );
     NShaft = blkdiag( NShaft,zeros(diskDofNum - shaftDofNum) );
+    FgShaft = [FgShaft; zeros((diskDofNum-shaftDofNum),1)];
 end
 clear shaftDofNum diskDofNum;
 
@@ -125,6 +127,7 @@ G = GShaft + GDisk;
 N = NShaft + NDisk;
 C = CShaft +         CBearing + CInterBearing;
 Q = QDisk;
+Fg = FgShaft + FgDisk + FgBearing + FgInterBearing;
 
 if InitialParameter.ComponentSwitch.hasLoosingBearing
     KLoosing = KShaft + KLBearing + KInterBearing;
@@ -147,6 +150,7 @@ Matrix.gyroscopic = G;
 Matrix.damping = C;
 Matrix.matrixN = N;
 Matrix.unblanceForce = Q;
+Matrix.gravity = Fg;
 
 if InitialParameter.ComponentSwitch.hasLoosingBearing
     Matrix.stiffnessLoosing = KLoosing;

@@ -1,7 +1,7 @@
 %% shaftElement
-% generate the mass, stiffness, gyroscopic matrix of a shaft element
+% generate the mass, stiffness, gyroscopic matrix, gravity vector of a shaft element
 %% Syntax
-% [Me, Ke, Ge, Ne] = shaftElement(AShaft)
+% [Me, Ke, Ge, Ne, Fge] = shaftElement(AShaft)
 %% Description
 % AShaft is a struct saving the physical parameters of a shaft element with
 % fields: dofOfEachNodes, outerRadius, innerRadius, density, elasticModulus, 
@@ -9,6 +9,8 @@
 %
 % Me, Ke, Ge, Ne are mass, stiffness, gyroscopic matrix of a shaft element. 
 % (n*n, n is the number of all dofs on this shaft element)
+%
+% Fge is gravity vector of a shaft element (n*1)
 %% Symbols
 % A: sectional area
 %
@@ -35,9 +37,11 @@
 % $$\varphi_s = \frac{12EI}{G A_s l^2} = \frac{24 I (1+\mu)}{A_s l^2}$$
 % 
 % I: second moment of aera
+%
+% m: mass of the element
 
 
-function [Me, Ke, Ge, Ne] = shaftElement(AShaft)
+function [Me, Ke, Ge, Ne, Fge] = shaftElement(AShaft)
 
 % check the input
 fieldName = {'dofOfEachNodes', 'outerRadius', 'innerRadius', 'density',... 
@@ -155,5 +159,12 @@ Ke = [ K1,   0,   0,   0,   0,   0,   0,   0;...
        K4,   0,   0,  K3, -K4,   0,   0,  K2 ];
 
 Ke = coefficient * triangular2symmetric(Ke);
+
+%%
+
+% gravity
+m = A * l *rho; % Kg, mass of the element
+FgeTotal = m * 9.8; % N
+Fge = [0; -FgeTotal/2; 0; 0; 0; -FgeTotal/2; 0; 0];
 
 end % end function

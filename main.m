@@ -13,30 +13,61 @@ InitialParameter = inputIntermediateBearing(InitialParameter);
 
 %% Establish models
 
-% grid{1} = [1 4 1]; manualGrid{2} = [3]; 
+% manualGrid{1} = [1 4 1]; manualGrid{2} = [3];
 grid = 'low';
 Parameter = establishModel(InitialParameter,...
                            'gridfineness', grid,...
                            'isPlotModel',  true,...
                            'isPlotMesh',   true);
-save('modelParameter','Parameter')                       
+save('modelParameter','Parameter')     
+
+
 %%  Generate the dynamic equation
+
 fclose('all');
 generateDynamicEquation(Parameter);                  
  
+
 %% Calculate response
 
+% calculate parameter
 TSTART = 0;
-TEND = 1;
+TEND = 3;
 SAMPLINGFREQUENCY = 20000;
 ISPLOTSTATUS = true;
 REDUCEINTERVAL = 1;
 calculateMethod = 'ode15s'; % RK: classic Runge-Kutta; ode45: using ode45(); ode15s: using ode15s()
+isUseBalanceAsInitial = true;
+isFreshInitial = true;
+
+% initial value
+if isUseBalanceAsInitial && isFreshInitial
+    q0 = calculateBalance(Parameter);
+elseif isUseBalanceAsInitial && ~isFreshInitial
+    % detect exist initial value
+    isExistInitialValue = exist('balancePosition.mat', 'file');
+    if isExistInitialValue
+        % check the dimension of the initial value
+        load('balancePosition.mat','qBalance')
+        if length(qBalance)== Parameter.Mesh.dofNum
+            q0 = qBalance;
+        else
+            q0 = calculateBalance(Parameter);
+        end % end if length(qBalance)~=
+    else
+        q0 = calculateBalance(Parameter);
+    end % end if isExistInitialValue
+else
+    q0 = zeros(Parameter.Mesh.dofNum,1);
+end
+
+% calculate
 tic
 [q, dq, t, convergenceStr] = calculateResponse(...
     Parameter,...
     [TSTART, TEND],...
     SAMPLINGFREQUENCY,...
+    q0,...
     'isPlotStatus', ISPLOTSTATUS,...
     'reduceInterval', REDUCEINTERVAL, ...
     'calculateMethod',calculateMethod);
@@ -50,15 +81,15 @@ end
 %% Post Proccessing
 
 % signalProccessing
-tSpan = [0 1];
+tSpan = [TSTART TEND];
 SwitchFigure.displacement       = true;
 SwitchFigure.axisTrajectory     = false;
 SwitchFigure.axisTrajectory3d   = false;
 SwitchFigure.phase              = false;
-SwitchFigure.fftSteady          = false;
+SwitchFigure.fftSteady          = true;
 SwitchFigure.fftTransient       = false;
 SwitchFigure.poincare           = false;
-SwitchFigure.saveFig            = false;
+SwitchFigure.saveFig            = true;
 SwitchFigure.saveEps            = false;
 
 signalProcessing(q, dq, t,...

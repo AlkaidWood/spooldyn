@@ -87,7 +87,7 @@ end
 
 %%
 
-% write the code to calculate the omega 
+% write the code to calculate the rotational speed
 % situation 1: a = 0
 if (Status.acceleration == 0) && (Status.isDeceleration == false)
     
@@ -178,13 +178,24 @@ loadMatrix1 = [...
 ];
 fprintf(dq,'%s\n', loadMatrix1);
 
+
 % if there is loosing beaaring, the K and C would be created in bearingLoosingForce.m 
 if ~Parameter.ComponentSwitch.hasLoosingBearing
     loadMatrix2 = [...
-    "K = Parameter.Matrix.stiffness;";...
-    "C = Parameter.Matrix.damping;";...
+        "K = Parameter.Matrix.stiffness;";...
+        "C = Parameter.Matrix.damping;";...
     ];
     fprintf(dq,'%s\n', loadMatrix2);
+end
+
+
+% if the gravity is taken into account
+if Parameter.ComponentSwitch.hasGravity
+    loadMatrix3 = "fGravity = Parameter.Matrix.gravity;";
+    fprintf(dq,'%s\n', loadMatrix3);
+    gravityForce = ' + fGravity';
+else
+    gravityForce = '';
 end
 
 
@@ -326,7 +337,7 @@ end
 totalForce = {...
  ' ';...
  '% total force ';...
- ['F = Q', hertzForce, rubForce, misForce, ';'];...
+ ['F = Q', gravityForce, hertzForce, rubForce, misForce, ';'];...
  ' ';...
  };
 totalForce = cell2string(totalForce);

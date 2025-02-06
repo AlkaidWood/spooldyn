@@ -1,14 +1,16 @@
 %% bearingElementInterMass
-% generate the mass, stiffness, damping matrix of a intermediate bearing 
-% element with mass
+% generate the mass, stiffness, damping matrix, gravity of a intermediate 
+% bearing element with mass
 %% Syntax
-% [Me, Ke, Ce] = bearingElementInterMass(AMBearing)
+% [Me, Ke, Ce, Fge] = bearingElementInterMass(AMBearing)
 %% Description
 % AMBearing is a struct saving the physical parameters of a bearing element
 % with fields: dofOfEachNodes, stiffness, damping, mass, dofOnShaftNode
 %
 % Me, Ke, Ce are mass, stiffness, damping cell of a intermediate bearing 
-% element. 
+% element.
+%
+% Fge is gravity cell of a intermediate bearing element.
 %
 % cell2mat(Me) is n*n matrix;
 % 
@@ -25,7 +27,7 @@
 % c: damping of bearing
 
 
-function [Me, Ke, Ce] = bearingElementInterMass(AMBearing)
+function [Me, Ke, Ce, Fge] = bearingElementInterMass(AMBearing)
 
 %% initial
 % constants
@@ -162,7 +164,20 @@ M22 = addElementIn(M22, Min, [1,1]);
 % output
 Me = {M11, M12;...
       M21, M22 };
-  
+
+
+%% gravity
+
+% initial
+Fge = zeros(dofBearingNum, 1);
+
+% calculate and output
+for im = 1:1:massNum
+    FgeHere = -9.8*m(im);
+    indexHere = 2 + (im-1)*dofBearing;
+    Fge(indexHere) = FgeHere;
+end
+
   
 %% sub-function
     

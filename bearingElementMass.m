@@ -1,22 +1,25 @@
 %% bearingElementMass
-% generate the mass, stiffness, damping matrix of a bearing element with mass
+% generate the mass, stiffness, damping matrix, gravity vector of a bearing
+% element with mass
 %% Syntax
-% [Me, Ke, Ce] = bearingElementMass(AMBearing)
+% [Me, Ke, Ce, Fge] = bearingElementMass(AMBearing)
 %% Description
 % AMBearing is a struct saving the physical parameters of a bearing element
 % with fields: dofOfEachNodes, stiffness, damping, mass, dofOnShaftNode
 %
 % Me, Ke, Ce are mass, stiffness, damping cell of a bearing element. 
 % (n*n, n is the number of dofs on this bearing element)
+% 
+% Fge is gravity vector in column
 %% Symbols
-% m: stiffness of bearing
+% m: mass of bearing
 % 
 % k: stiffness of bearing
 %
 % c: damping of bearing
 
 
-function [Me, Ke, Ce] = bearingElementMass(AMBearing)
+function [Me, Ke, Ce, Fge] = bearingElementMass(AMBearing)
 
 %% initial
 % constants
@@ -39,6 +42,7 @@ dofBearingNum = sum(dofBearing);
 % initial
 K = zeros(dofNum, dofNum);
 C = zeros(dofNum, dofNum);
+Fge = zeros(dofBearingNum, 1);
 
 
 %% add part of the shaft (stiffness and damping)
@@ -106,7 +110,14 @@ M22 = addElementIn(M22, Min, [1,1]);
 % output
 Me = {M11, M12;...
       M21, M22 };
-  
+
+%% gravity
+
+for im=1:1:massNum
+    FgeHere = -9.8*m(im);
+    indexHere = 2 + (im-1)*dofBearing;
+    Fge(indexHere) = FgeHere;
+end
   
 %% sub-function
     

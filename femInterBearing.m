@@ -1,7 +1,7 @@
 %% femInterBearing
-% generate the globe mass, stiffness, damping matrix of bearings
+% generate the globe mass, stiffness, damping matrix, gravity of bearings
 %% Syntax
-% [K, C] = femInterBearing( InterBearing, nodeDof )
+% [M, K, C, Fg] = femInterBearing( InterBearing, nodeDof )
 %% Description
 % InterBearing is a struct saving the physical parameters of bearings with 
 % fields: amount, stiffness, damping, positionOnShaftNode
@@ -9,16 +9,19 @@
 % nodeDof: is a array (the number of nodes  * 1) saving the dof of each 
 % node.
 %
-% K, C are stiffness, damping matrix of intermediate bearings. (n*n,
-% n is the number of all nodes)
+% M, K, C are mass, stiffness, damping matrix of intermediate bearings. 
+% (n*n, n is the number of all nodes)
+%
+% Fg is gravity vector (n*1)
 
-function  [M, K, C] = femInterBearing( InterBearing, nodeDof )
+function  [M, K, C, Fg] = femInterBearing( InterBearing, nodeDof )
 
-% generate global matrices
+% generate global matrices and vectors
 dofNum = sum(nodeDof);
 M = zeros(dofNum, dofNum);
 K = zeros(dofNum, dofNum);
 C = zeros(dofNum, dofNum);
+Fg = zeros(dofNum, 1);
 
 %%
 
@@ -78,22 +81,25 @@ if ~isempty(massBearingIndex)
     MeM = cell(massBearingNum,1);
     KeM = cell(massBearingNum,1); 
     CeM = cell(massBearingNum,1);
+    FgeM = cell(massBearingNum,1);
     
     
-    % generat mass bearing elements
+    % generate mass bearing elements
     for iMBearing = 1:1:massBearingNum
         % get the information of ith mass braring
         AMBearing = getStructPiece(MassBearing,iMBearing,[]); % a normal bearing
         AMBearing.dofOnShaftNode = nodeDof(AMBearing.positionOnShaftNode);
         % generate elements (MeN: Me for mass bearing)
-        [MeM{iMBearing}, KeM{iMBearing}, CeM{iMBearing}]...
+        [MeM{iMBearing}, KeM{iMBearing}, CeM{iMBearing}, FgeM{iMBearing}]...
                                            = bearingElementInterMass(AMBearing); 
     end
-    % assembly mass matrix
+
+    % assembly mass matrix and gravity
     positionM = MassBearing.positionNode(:,1); % find index of element in global matrix
     mBearingIndexM = findIndex(positionM, nodeDof);
     for iMBearing = 1:1:massBearingNum
         M = addElementIn(M, MeM{iMBearing}{2,2}, mBearingIndexM(iMBearing, :));
+        Fg = addElementIn(Fg, FgeM{iMBearing}, [mBearingIndexM(iMBearing,1),1]);
     end
     
     % assembly stiffness and damping matrix
