@@ -95,6 +95,7 @@ tEndIndex   = find(( (timeEnd-FINDERROR)<t & t<(timeEnd+FINDERROR) ),1);
 dofNum          = Parameter.Mesh.dofNum;
 nodeNum         = Parameter.Mesh.nodeNum;
 dofOnNodeNo     = Parameter.Mesh.dofOnNodeNo;
+Node            = Parameter.Mesh.Node;
 figureIdentity  = cell(1,dofNum);
 nodeNo          = 1;
 dofInThisNode   = 0;
@@ -122,7 +123,7 @@ if SwitchFigure.displacement
     for iDof=1:1:dofNum
         figureName = ['Displacement ',figureIdentity{iDof}];
         
-        isBearing = iDof>= 65 ;
+        isBearing = Node(dofOnNodeNo(iDof)).isBearing;
         isTranslation = rem(iDof, 4)==1 || rem(iDof, 4)==2;
         if isBearing
             ylabelname = '$q$ (m)';
@@ -196,7 +197,7 @@ if SwitchFigure.phase
         figureName = ['Phase ',figureIdentity{iDof}];%name the figure
         yspan(iDof,end) = NaN;%set the NaN at the end of data in order to control curve not close
         
-        isBearing = iDof>= 65 ;
+        isBearing = Node(dofOnNodeNo(iDof)).isBearing;
         isTranslation = rem(iDof, 4)==1 || rem(iDof, 4)==2;
         if isBearing
             ylabelname = '$\dot{q}$ (m/s)';
@@ -408,7 +409,7 @@ if SwitchFigure.poincare
 
         figureName = ['Poincare ',figureIdentity{iDof}];
         
-        isBearing = iDof>= 65 ;
+        isBearing = Node(dofOnNodeNo(iDof)).isBearing;
         isTranslation = rem(iDof, 4)==1 || rem(iDof, 4)==2;
         if isBearing
             ylabelname = '$\dot{q}$ (m/s)';

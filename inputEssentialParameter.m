@@ -30,11 +30,18 @@ Shaft.rayleighDamping   = [35.261, 5.3309e-5]; % [alpha, beta] CShaft = alpha*(M
 
 % typing the parameter about running status
 Status.ratio            = [1.2]; % [v-shaft2/v-shaft1; v-shaft3/v-shaft1]
-Status.vmax             = 1e-5*2*pi; % rad/s, the maximum rotational speed for shaft 1
-Status.acceleration     = 1*2*pi; % rad/s^2, acceleration of shaft 1
+Status.vmax             = 210; % rad/s, the maximum rotational speed for shaft 1
+Status.acceleration     = 21; % rad/s^2, acceleration of shaft 1
 Status.duration         = 10; % s, the duration of shaft 1 in vmax
-Status.isDeceleration   = true; % boolean, add a deceleration in status
+Status.isDeceleration   = false; % boolean, add a deceleration in status
 Status.vmin             = 0; % s, the minimum speed afterdeceleration
+
+% (otherwise) you can define your own simulation status function
+% define your own function in calculateStatus() where the single time point
+% is input, the output must be [acceleration, speed, angular] corresponding
+% to input time "tn"
+Status.isUseCustomize   = true;
+Status.customize        = @(tn) calculateStatus(tn);
 
 % check input
 if  length(Status.ratio) >= Shaft.amount

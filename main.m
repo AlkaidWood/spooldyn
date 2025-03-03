@@ -32,34 +32,14 @@ generateDynamicEquation(Parameter);
 
 % calculate parameter
 TSTART = 0;
-TEND = 3;
+TEND = 10;
 SAMPLINGFREQUENCY = 20000;
 ISPLOTSTATUS = true;
 REDUCEINTERVAL = 1;
 calculateMethod = 'ode15s'; % RK: classic Runge-Kutta; ode45: using ode45(); ode15s: using ode15s()
+options = odeset(); % if you want to use ode45() or ode15s(), you would control the options here
 isUseBalanceAsInitial = true;
-isFreshInitial = true;
-
-% initial value
-if isUseBalanceAsInitial && isFreshInitial
-    q0 = calculateBalance(Parameter);
-elseif isUseBalanceAsInitial && ~isFreshInitial
-    % detect exist initial value
-    isExistInitialValue = exist('balancePosition.mat', 'file');
-    if isExistInitialValue
-        % check the dimension of the initial value
-        load('balancePosition.mat','qBalance')
-        if length(qBalance)== Parameter.Mesh.dofNum
-            q0 = qBalance;
-        else
-            q0 = calculateBalance(Parameter);
-        end % end if length(qBalance)~=
-    else
-        q0 = calculateBalance(Parameter);
-    end % end if isExistInitialValue
-else
-    q0 = zeros(Parameter.Mesh.dofNum,1);
-end
+isFreshInitial = false;
 
 % calculate
 tic
@@ -67,10 +47,12 @@ tic
     Parameter,...
     [TSTART, TEND],...
     SAMPLINGFREQUENCY,...
-    q0,...
     'isPlotStatus', ISPLOTSTATUS,...
     'reduceInterval', REDUCEINTERVAL, ...
-    'calculateMethod',calculateMethod);
+    'calculateMethod',calculateMethod,...
+    'options', options,...
+    'isFreshInitial', isFreshInitial,...
+    'isUseBalanceAsInitial', isUseBalanceAsInitial);
 toc
 if ~isempty(convergenceStr)
     fprintf('%s \n', convergenceStr)
@@ -82,12 +64,12 @@ end
 
 % signalProccessing
 tSpan = [TSTART TEND];
-SwitchFigure.displacement       = true;
+SwitchFigure.displacement       = false;
 SwitchFigure.axisTrajectory     = false;
 SwitchFigure.axisTrajectory3d   = false;
 SwitchFigure.phase              = false;
-SwitchFigure.fftSteady          = true;
-SwitchFigure.fftTransient       = false;
+SwitchFigure.fftSteady          = false;
+SwitchFigure.fftTransient       = true;
 SwitchFigure.poincare           = false;
 SwitchFigure.saveFig            = true;
 SwitchFigure.saveEps            = false;
@@ -96,30 +78,9 @@ signalProcessing(q, dq, t,...
                  Parameter, SwitchFigure, tSpan, SAMPLINGFREQUENCY,...
                  'reduceInterval', REDUCEINTERVAL,...
                  'fftTimeInterval', 0.5,...
-                 'fftisPlot3DTransient', false,...
+                 'fftisPlot3DTransient', true,...
                  'fftSuperpositionRatio', 0.5,...
-                 'fftXlim', 400,...
+                 'fftXlim', 150,...
                  'isPlotInA4', true,...
                  'fftSteadyLog', true)
 
-
-%% Real-time monitor
-
-% plot part of response
-% close all
-% dofNo = 2;
-% 
-% figure
-% plot(t,q(dofNo,:))
-% set(gcf,'unit','centimeters','position',[3 12 35 8])
-% set(gca,'Position',[.05 .1 .92 .75])
-% 
-% figure
-% plot(t,dq(dofNo,:))
-% set(gcf,'unit','centimeters','position',[3 1.5 35 8])
-% set(gca,'Position',[.05 .1 .92 .75])
-% 
-% figure
-% plot(q(dofNo*4-3,:), q(dofNo*4-2,:))
-% set(gcf,'unit','centimeters','position',[3 3 20 16])
-% set(gca,'Position',[.05 .1 .92 .75])

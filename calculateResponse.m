@@ -22,6 +22,8 @@
 % t is time series (row)
 %
 % convergenceStr: is a str deliver the message of convergence
+%
+% options is the output of the Matlab function odeset() for ode solver 
 
 
 function [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, q0, NameValueArgs)
@@ -34,7 +36,38 @@ arguments % name value pair
     NameValueArgs.isPlotStatus = true; 
     NameValueArgs.reduceInterval = 1;
     NameValueArgs.calculateMethod = 'RK';
+    NameValueArgs.options = odeset();
+    NameValueArgs.isUseBalanceAsInitial = false;
+    NameValueArgs.isFreshInitial = false
 end
+
+
+%%
+
+% initial value
+if q0 ==0
+    isUseBalanceAsInitial = NameValueArgs.isUseBalanceAsInitial;
+    isFreshInitial = NameValueArgs.isFreshInitial;
+    if isUseBalanceAsInitial && isFreshInitial
+        q0 = calculateBalance(Parameter);
+    elseif isUseBalanceAsInitial && ~isFreshInitial
+        % detect exist initial value
+        isExistInitialValue = exist('balancePosition.mat', 'file');
+        if isExistInitialValue
+            % check the dimension of the initial value
+            load('balancePosition.mat','qBalance')
+            if length(qBalance)== Parameter.Mesh.dofNum
+                q0 = qBalance;
+            else
+                q0 = calculateBalance(Parameter);
+            end % end if length(qBalance)~=
+        else
+            q0 = calculateBalance(Parameter);
+        end % end if isExistInitialValue
+    else
+        q0 = zeros(Parameter.Mesh.dofNum,1);
+    end % end if isUseBalanceAsInitial && isFreshInitial
+end % end if q0 ~= 0
 
 %%
 
@@ -77,15 +110,15 @@ if strcmp(NameValueArgs.calculateMethod, 'RK')
             break
         end % end if isnan
     end % end for iT
-elseif strcmp(NameValueArgs.calculateMethod, 'ode45')
+elseif strcmp(NameValueArgs.calculateMethod, 'ode45') % use ode45 as solver
     odefun = @(tn, yn) [yn(dofNum+1:end, 1); dynamicEquation(tn,yn(1:dofNum, 1), yn(dofNum+1:end, 1), Parameter)];
-    [~, yode] = ode45(odefun, t, [yn; dyn]);
+    [~, yode] = ode45(odefun, t, [yn; dyn], NameValueArgs.options);
     yode = yode';
     q = yode(1:dofNum, :);
     dq = yode(dofNum+1:end, :);
-elseif strcmp(NameValueArgs.calculateMethod, 'ode15s')
+elseif strcmp(NameValueArgs.calculateMethod, 'ode15s') % use ode15s as solver
     odefun = @(tn, yn) [yn(dofNum+1:end, 1); dynamicEquation(tn,yn(1:dofNum, 1), yn(dofNum+1:end, 1), Parameter)];
-    [~, yode] = ode15s(odefun, t, [yn; dyn]);
+    [~, yode] = ode15s(odefun, t, [yn; dyn], NameValueArgs.options);
     yode = yode';
     q = yode(1:dofNum, :);
     dq = yode(dofNum+1:end, :);

@@ -18,23 +18,7 @@ function ddyn = dynamicEquation(tn, yn, dyn, Parameter)
  
  
 % calculate phase, speed and acceleration
-if tn <= 1e-05
-    ddomega = [6.2832      7.5398];
-    domega  = [6.2832      7.5398] * tn;
-    omega   = 0.5 * [6.2832      7.5398] * tn^2;
-elseif tn <= 10
-    ddomega = [0  0];
-    domega  = [6.2832e-05  7.5398e-05];
-    omega   = [3.1416e-10  3.7699e-10] + [6.2832e-05  7.5398e-05] * (tn - 1e-05 );
-elseif tn <= 10
-    ddomega = -[6.2832      7.5398];
-    domega  = [6.2832e-05  7.5398e-05] - [6.2832      7.5398] * (tn - 10 );
-    omega   = [0.00062832  0.00075398] + [6.2832e-05  7.5398e-05]*(tn - 10 ) - 0.5*[6.2832      7.5398]*(tn - 10 )^2;
-else
-    ddomega = [0  0];
-    domega  = [0  0];
-    omega   = [0.00062832  0.00075398] + [0  0]*(tn - 10 );
-end
+[ddomega, domega, omega] = calculateStatus(tn);
  
  
 % load matrix
