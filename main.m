@@ -64,7 +64,7 @@ end
 
 % signalProccessing
 tSpan = [TSTART TEND];
-SwitchFigure.displacement       = false;
+SwitchFigure.displacement       = true;
 SwitchFigure.axisTrajectory     = false;
 SwitchFigure.axisTrajectory3d   = false;
 SwitchFigure.phase              = false;

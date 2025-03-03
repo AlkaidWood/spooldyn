@@ -75,7 +75,21 @@ agentFun_LP = generateAgent(q_exper_LP, tacho_LP, time_LP,...
     components_index = 1);
 
 
-%% establish simulation model
+%% Bayesian optimization of controller parameters 
+
+% Define bounds on the optimization variables
+bound_min_k = 1e7;
+bound_max_k = 1e10;
+
+bound_min_c = 500;
+bound_max_c = 30000;
+
+
+% parameters waiting to be optimized
+opt_vars = [];
+
+opt_vars = [opt_vars optimizableVariable('Kb1x', [bound_min_Kp, bound_max_Kp],'Type','real')];
+
 
 
 %% Bayesian optimization

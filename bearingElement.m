@@ -40,20 +40,22 @@ end
 
 %%
 % constants
-k = ANBearing.stiffness;
-c = ANBearing.damping;
+kV = ANBearing.stiffness; % V direction: horizontal
+kW = ANBearing.stiffnessVertical; % W direction: vertical
+cV = ANBearing.damping;
+cW = ANBearing.dampingVertical;
 dof = ANBearing.dofOnShaftNode;
 
 %%
 % generate stiffness matrix of bearing element
-Ke = [ k, 0;
-       0, k ];
+Ke = [ kV, 0;
+       0, kW ];
 Ke = blkdiag( Ke,zeros(dof - length(Ke)) ); % expand stiffness matrix
 
 %%
 % generate damping matrix of bearing element
-Ce = [ c, 0;
-       0, c ];
+Ce = [ cV, 0;
+       0, cW ];
 Ce = blkdiag( Ce,zeros(dof - length(Ce)) ); % expand damping matrix
 
 end

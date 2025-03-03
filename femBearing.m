@@ -173,8 +173,8 @@ if ~isempty(LoosingBearing)
                 kLoose = LoosingBearing.loosingStiffness(thisLoosingIndex);
                 cLoose = LoosingBearing.loosingDamping(thisLoosingIndex);
                 looseNo = LoosingBearing.loosingPositionNo(thisLoosingIndex);
-                AMBearing.stiffness(looseNo) = kLoose;
-                AMBearing.damping(looseNo) = cLoose;
+                AMBearing.stiffnessVertical(looseNo) = kLoose;
+                AMBearing.dampingVertical(looseNo) = cLoose;
             end
         end
         % generate elements (MeN: Me for mass bearing)

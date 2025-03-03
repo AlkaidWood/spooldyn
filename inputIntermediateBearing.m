@@ -46,9 +46,11 @@ IntermediateBearing.isHertzianTop   = [true];
 % in the first column (near the shaft); the model:
 % shaft1--Hertz+k1c1--m1--k2c2--m2--k3c3--m3--k4c4--mn--k(n+1)c(n+1)--shaft2; (isHertzianTop=true)
 % shaft1--k1c1--m1--k2c2--m2--k3c3--m3--k4c4--mn--Hertz+k(n+1)c(n+1)--shaft2; (isHertzianTop=false)
-IntermediateBearing.stiffness       =  [100, 5e8]; % N/m, in column, n*1
-IntermediateBearing.damping         =  [800, 150]; % N/s^2, in column, n*1
-IntermediateBearing.mass            =  [0.0484]; % kg
+IntermediateBearing.stiffness           =  [100, 5e8]; % N/m, in column, n*1
+IntermediateBearing.stiffnessVertical   =  [200, 3e8]; % N/m, in column, n*1
+IntermediateBearing.damping             =  [800, 150]; % N/s^2, in column, n*1
+IntermediateBearing.dampingVertical     =  [500, 300]; % N/s^2, in column, n*1
+IntermediateBearing.mass                =  [0.0484]; % kg
 % if there is no Hertizan contact force, please set n*1 zero vector for following parameters, where n is the number of the intermediate bearing                                 
 IntermediateBearing.rollerNum        = [13];
 IntermediateBearing.radiusInnerRace = [10e-3]; % m
@@ -106,14 +108,22 @@ for iBearing = 1:1:IntermediateBearing.amount
             % adjust stiffness and damping
             colNum = size(IntermediateBearing.stiffness(iBearing,:),2);
             kHere = IntermediateBearing.stiffness(iBearing,:);
+            kHereVertical = IntermediateBearing.stiffnessVertical(iBearing,:);
             cHere = IntermediateBearing.damping(iBearing,:);
+            cHereVertical = IntermediateBearing.dampingVertical(iBearing,:);
             kHereNum = massHereNum + 1;
             kHere = kHere(1:kHereNum);
+            kHereVertical = kHereVertical(1:kHereNum);
             cHere = cHere(1:kHereNum);
+            cHereVertical = cHereVertical(1:kHereNum);
             kInv = flip(kHere);
+            kInvVertical = flip(kHereVertical);
             cInv = flip(cHere);
+            cInvVertical = flip(cHereVertical);
             IntermediateBearing.stiffness(iBearing,:) = [kInv, zeros(1,colNum-kHereNum)];
+            IntermediateBearing.stiffnessVertical(iBearing,:) = [kInvVertical, zeros(1,colNum-kHereNum)];
             IntermediateBearing.damping(iBearing,:) = [cInv, zeros(1,colNum-kHereNum)];
+            IntermediateBearing.dampingVertical(iBearing,:) = [cInvVertical, zeros(1,colNum-kHereNum)];
        end
     end
 end

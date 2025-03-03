@@ -9,9 +9,13 @@
 % Ke, Ce are stiffness, damping cell of a bearing element. 
 % (n*n, n is the number of dofs on this intermediate bearing element)
 %% Symbols
-% k: stiffness of intermediate bearing
+% kV: horizontal stiffness of intermediate bearing
 %
-% c: damping of intermediate bearing
+% kW: vertical stiffness of intermediate bearing
+%
+% cV: horizontal damping of intermediate bearing
+%
+% cW: vertical damping of intermediate bearing
 
 function [Ke, Ce] = bearingElementInter(ABearing)
 %%
@@ -39,16 +43,18 @@ end
 %%
 
 % constants
-k = ABearing.stiffness;
-c = ABearing.damping;
+kV = ABearing.stiffness;
+cV = ABearing.damping;
+kW = ABearing.stiffnessVertical;
+cW = ABearing.dampingVertical;
 dof1 = ABearing.dofOnShaftNode(1);
 dof2 = ABearing.dofOnShaftNode(2);
 
 %%
 
 % stiffness matrix
-Kin = [ k, 0;...
-        0, k ];
+Kin = [ kV, 0;...
+        0, kW ];
  
 K11 = zeros(dof1);      K12 = zeros(dof1, dof2);
 K21 = K12';             K22 = zeros(dof2);
@@ -62,8 +68,8 @@ Ke = {K11, K12;...
 %%
 
 % damping matrix
-Cin = [ c, 0;...
-        0, c ];
+Cin = [ cV, 0;...
+        0, cW ];
  
 C11 = zeros(dof1);      C12 = zeros(dof1, dof2);
 C21 = C12';             C22 = zeros(dof2);

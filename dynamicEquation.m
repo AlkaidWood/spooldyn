@@ -18,7 +18,7 @@ function ddyn = dynamicEquation(tn, yn, dyn, Parameter)
  
  
 % calculate phase, speed and acceleration
-[ddomega, domega, omega] = calculateStatus(tn);
+[ddomega, domega, omega] = Parameter.Status.customize(tn);
  
  
 % load matrix
