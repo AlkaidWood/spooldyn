@@ -153,22 +153,40 @@ if NameValueArgs.isPlotStatus
     ratio           = Status.ratio;
     ratio           = [1; ratio]; % the first shaft is basic
 
-
+    
     % initial the status matrix
     omega 	= zeros(dofNum,length(t));
     domega  = omega;
     ddomega = omega;
 
-
-    % calculate the status matrix
     status = cell(shaftNum,1);
-    for iShaft = 1:1:shaftNum
-        iVmax           = vmax * ratio(iShaft);
-        iVmin           = vmin * ratio(iShaft);
-        iAcceleration   = acceleration*ratio(iShaft);
-        status{iShaft} = rotationalStatus(t, iVmax, duration, iAcceleration,...
-                                          isDeceleration, iVmin);
-    end
+
+    if ~Status.isUseCustomize % using default status
+        % calculate the status matrix
+        for iShaft = 1:1:shaftNum
+            iVmax           = vmax * ratio(iShaft);
+            iVmin           = vmin * ratio(iShaft);
+            iAcceleration   = acceleration*ratio(iShaft);
+            status{iShaft} = rotationalStatus(t, iVmax, duration, iAcceleration,...
+                                              isDeceleration, iVmin);
+        end % end for iShaft
+    else 
+        % using customized status
+        % initial
+        for iShaft = 1:1:shaftNum
+            status{iShaft} = zeros(3,length(t)); % initial
+        end % end for iShaft
+        % calculate status
+        for iTime = 1:1:length(t)
+            [ddomega_here, domega_here, omega_here] = Status.customize(t(iTime));
+            for iShaft = 1:1:shaftNum
+                status{iShaft}(1,iTime) = omega_here(iShaft);
+                status{iShaft}(2,iTime) = domega_here(iShaft);
+                status{iShaft}(3,iTime) = ddomega_here(iShaft);
+            end % end for iShaft
+        end % end for iTime
+        
+    end % end if
 
 
     % assemble the status matrix
