@@ -196,10 +196,10 @@ for iShaft = 1:1:Shaft.amount
      
     % set axis, title
     xlim([0-0.1*Shaft.totalLength(iShaft), Shaft.totalLength(iShaft)*1.1])
-    ylim([-0.8-(max(noInColumnRecorder)-1)*0.25, 0.8])
+    ylim([-0.8-(max([1,noInColumnRecorder])-1)*0.25, 0.8])
     title(figureName)
     h.Units = 'centimeters';
-    h.Position = [2 8 38 6+(max(noInColumnRecorder)-1)*0.8];
+    h.Position = [2 8 38 6+(max([1,noInColumnRecorder])-1)*0.8];
     set(gca,'LooseInset',[0.01,0.01,0.01,0.01]);
     
     
