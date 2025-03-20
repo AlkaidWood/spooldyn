@@ -68,7 +68,7 @@ end
 %%
 
 % generate FEM matrices of disk 
-[MDisk, GDisk, NDisk, QDisk, FgDisk] = femDisk( Parameter.Disk,...
+[MDisk, GDisk, NDisk, QDisk, FgDisk, EDisk] = femDisk( Parameter.Disk,...
                                                 [Parameter.Mesh.Node.dof] );
                              
 
@@ -144,13 +144,14 @@ C = sparse(C);
 
 
 % generate the struct Matrix
-Matrix.mass = M;
-Matrix.stiffness = K;
-Matrix.gyroscopic = G;
-Matrix.damping = C;
-Matrix.matrixN = N;
-Matrix.unblanceForce = Q;
-Matrix.gravity = Fg;
+Matrix.mass = M; % n*n, n is dof number
+Matrix.stiffness = K; % n*n
+Matrix.gyroscopic = G; % n*n
+Matrix.damping = C; % n*n
+Matrix.matrixN = N; % n*n
+Matrix.unblanceForce = Q; % n*1
+Matrix.gravity = Fg; % n*1
+Matrix.eccentricity = EDisk'; % 1*m, m is the number of disks
 
 if InitialParameter.ComponentSwitch.hasLoosingBearing
     Matrix.stiffnessLoosing = KLoosing;

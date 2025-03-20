@@ -1,7 +1,7 @@
 %% diskElement
-% generate the mass, stiffness, gyroscopic matrix, gravity vector of a disk element
+% generate the mass, stiffness, gyroscopic matrix, gravity vector and eccentricity of a disk element
 %% Syntax
-% [Me, Ge, Ne, Fge] = diskElement(ADisk)
+% [Me, Ge, Ne, Fge, Ee] = diskElement(ADisk)
 %% Description
 % ADisk is a struct saving the physical parameters of a disk element with
 % fields: dofOfEachNodes, radius, density, thickness, eccentricity
@@ -10,6 +10,8 @@
 % (n*n, n is the number of all dofs on this shaft element)
 %
 % Fge is gravity vector of a disk element (n*1)
+%
+% Ee is eccentricity of disk
 %% Symbols
 % m: mass of disk
 %
@@ -26,7 +28,7 @@
 % eDisk: eccentricity of the disk
 
 
-function [Me, Ge, Ne, Fge] = diskElement(ADisk)
+function [Me, Ge, Ne, Fge, Ee] = diskElement(ADisk)
 
 % check the input
 fieldName = {'dofOfEachNodes', 'outerRadius', 'innerRadius', 'density', 'thickness'};
@@ -84,5 +86,10 @@ Ne = [  0,   0,   0,   0;...
 FgeTotal = m * 9.8; % N
 Fge = [0; -FgeTotal; 0; 0];
 
+
+%%
+
+% eccentricity
+Ee = m * eDisk;
 
 end

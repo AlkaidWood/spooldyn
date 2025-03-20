@@ -1,7 +1,8 @@
 %% femDisk
-% generate the globe mass, stiffness, gyroscopic matrix, gravity of disks
+% generate the globe mass, stiffness, gyroscopic matrix, gravity, 
+% eccentricity of disks
 %% Syntax
-% [M, G, N, Fg] = femDisk(Disk,nodeDof)
+% [M, G, N, Q, Fg, E] = femDisk(Disk,nodeDof)
 %% Description
 % Disk is a struct saving the physical parameters of Disks with fields:
 % amount, dofOfEachNodes, radius, thickness, density, positionOnShaftNode
@@ -12,11 +13,15 @@
 % M, G, N are mass, stiffness, gyroscopic, N matrix of disks. (n*n,
 % n is the number of all nodes)
 %
+% Q is zero vector denoting the unbalance force
+%
 % Fg is the gravity vector (n*1)
+%
+% E is eccentrcity of disk (m*1, m is the number of the disks)
 
 
 
-function [M, G, N, Q, Fg] = femDisk(Disk,nodeDof)
+function [M, G, N, Q, Fg, E] = femDisk(Disk,nodeDof)
 
 
 % generate elements
@@ -24,13 +29,14 @@ Me = cell(Disk.amount,1);
 Ge = cell(Disk.amount,1);
 Ne = cell(Disk.amount,1);
 Fge = cell(Disk.amount,1);
+E = zeros(Disk.amount,1);
 Temporary = rmfield(Disk,'amount'); % for extract part of data of Shaft
 
 for iDisk = 1:1:Disk.amount
     % get the information of ith Disk
     ADisk = getStructPiece(Temporary,iDisk,[]);
     % generate elements
-    [Me{iDisk}, Ge{iDisk}, Ne{iDisk}, Fge{iDisk}] = diskElement(ADisk); 
+    [Me{iDisk}, Ge{iDisk}, Ne{iDisk}, Fge{iDisk}, E(iDisk)] = diskElement(ADisk); 
 end
 
 %%
