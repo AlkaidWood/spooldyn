@@ -106,6 +106,7 @@ ComponentSwitch.hasLoosingBearing = false;
 ComponentSwitch.hasRubImpact = false;
 ComponentSwitch.hasCouplingMisalignment = false;
 ComponentSwitch.hasHertzianForce = false;
+ComponentSwitch.hasCustom = false;
 
 %%
 

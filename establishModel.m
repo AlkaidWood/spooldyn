@@ -1,37 +1,64 @@
-%% establishModel
-% Generate the matrices and vectors in dynamic equation of general rotor system
-%% Syntax
-% Parameter = establishModel(InitialParameter)
-% Parameter = establishModel(InitialParameter,NameValueArgs)
-%% Description
-% InitialParameter:
-%                    Shaft: [1×1 struct]
-%                     Disk: [1×1 struct]
-%                  Bearing: [1×1 struct]
-%          ComponentSwitch: [1×1 struct]
-%      IntermediateBearing: [1×1 struct]
-%                RubImpact: [1×1 struct]
-%           LoosingBearing: [1×1 struct]
-%     CouplingMisalignment: [1×1 struct]
+%% ESTABLISHMODEL Generate system matrices for rotor dynamics analysis
+% Constructs mass, stiffness, damping, and gyroscopic matrices for rotor systems
+% 
+% Syntax:
+%   Parameter = establishModel(InitialParameter)
+%   Parameter = establishModel(InitialParameter, Name, Value)
 %
-% Parameter:
-%                    Shaft: [1×1 struct]
-%                     Disk: [1×1 struct]
-%                  Bearing: [1×1 struct]
-%          ComponentSwitch: [1×1 struct]
-%      IntermediateBearing: [1×1 struct]
-%                RubImpact: [1×1 struct]
-%           LoosingBearing: [1×1 struct]
-%     CouplingMisalignment: [1×1 struct]
-%                     Mesh: [1×1 struct]
-%                   Matrix: [1×1 struct]
+% Input Arguments:
+%   InitialParameter - System configuration structure with fields:
+%       .Shaft: [1×1 struct]               % Shaft properties
+%       .Disk: [1×1 struct]                % Disk components
+%       .Bearing: [1×1 struct]             % Bearing components
+%       .ComponentSwitch: [1×1 struct]     % Component activation flags
+%       .IntermediateBearing: [1×1 struct]  % Intermediate bearing params (optional)
+%       .RubImpact: [1×1 struct]            % Rub-impact properties (optional)
+%       .LoosingBearing: [1×1 struct]       % Loosing bearing parameters (optional)
+%       .CouplingMisalignment: [1×1 struct] % Coupling misalignment params (optional)
 %
-% NameValueArgs.gridFineness = 'low' (default) or 'middle' or 'high' or
-% cell data (manual grid)
+% Name-Value Pair Arguments:
+%   gridFineness - Mesh resolution specification:
+%       'low' (default) | 'middle' | 'high' | numeric vector
+%   isPlotModel  - Display system schematic diagram (default: true)
+%   isPlotMesh   - Visualize mesh discretization (default: true)
 %
-% NameValueArgs.isPlotModel = true (default) or false
+% Output:
+%   Parameter - Enhanced system structure with FEM components:
+%       .Shaft: [1×1 struct]               % Original shaft parameters
+%       .Disk: [1×1 struct]                % Original disk parameters
+%       .Bearing: [1×1 struct]             % Original bearing parameters
+%       .ComponentSwitch: [1×1 struct]     % Component activation states
+%       .IntermediateBearing: [1×1 struct] % Intermediate bearing params
+%       .RubImpact: [1×1 struct]           % Rub-impact parameters
+%       .LoosingBearing: [1×1 struct]      % Loosing bearing parameters
+%       .CouplingMisalignment: [1×1 struct]% Coupling parameters
+%       .Mesh: [1×1 struct]                % Discretization results (see
+%                                            meshModel.m)
+%       .Matrix: [1×1 struct]              % System matrices:
+%           .mass: sparse matrix            % Mass matrix (n×n)
+%           .stiffness: sparse matrix      % Stiffness matrix (n×n)
+%           .damping: sparse matrix        % Damping matrix (n×n)
+%           .gyroscopic: sparse matrix     % Gyroscopic matrix (n×n)
+%           .matrixN: sparse matrix        % Nonlinear term matrix (n×n)
+%           .unbalanceForce: double vector  % Unbalance force (n×1)
+%           .gravity: double vector         % Gravity force (n×1)
+%           .eccentricity: double vector    % Disk eccentricities (m×1)
 %
-% NameValueArgs.isPlotMesh = true (default) or false
+% Example:
+%   % Basic usage with default settings
+%   config = establishModel(sysParams);
+%
+%   % High-resolution mesh without visualization
+%   config = establishModel(sysParams, ...
+%       'gridFineness', 'high', ...
+%       'isPlotModel', false, ...
+%       'isPlotMesh', false);
+%
+%   % Custom mesh specification
+%   customMesh = linspace(0, 1.5, 50);
+%   config = establishModel(sysParams, 'gridFineness', customMesh);
+%
+% See also FEMSHaft, FEMDisk, FEMBearing
 
 
 
