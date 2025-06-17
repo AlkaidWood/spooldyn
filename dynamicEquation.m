@@ -26,27 +26,24 @@ M = Parameter.Matrix.mass;
 G = Parameter.Matrix.gyroscopic;
 N = Parameter.Matrix.matrixN;
 Q = Parameter.Matrix.unblanceForce;
+EDisk = Parameter.Matrix.eccentricity;
 K = Parameter.Matrix.stiffness;
 C = Parameter.Matrix.damping;
 fGravity = Parameter.Matrix.gravity;
-G(1:28, 1:28) = domega(1)*G(1:28, 1:28);
-N(1:28, 1:28) = ddomega(1)*N(1:28, 1:28);
-G(29:48, 29:48) = domega(2)*G(29:48, 29:48);
-N(29:48, 29:48) = ddomega(2)*N(29:48, 29:48);
+G(1:32, 1:32) = domega(1)*G(1:32, 1:32);
+N(1:32, 1:32) = ddomega(1)*N(1:32, 1:32);
+G(33:52, 33:52) = domega(2)*G(33:52, 33:52);
+N(33:52, 33:52) = ddomega(2)*N(33:52, 33:52);
  
  
 % calculate unblance force
 diskInShaftNo = [1  1  2  2];
-Q([9  17  37  41])   = [0.00056224  0.00056224  0.00052761  0.00052761] .* ( ddomega(diskInShaftNo) .* sin(omega(diskInShaftNo)) + domega(diskInShaftNo).^2 .* cos(omega(diskInShaftNo)));
-Q([10  18  38  42]) = [0.00056224  0.00056224  0.00052761  0.00052761] .* (-ddomega(diskInShaftNo) .* cos(omega(diskInShaftNo)) + domega(diskInShaftNo).^2 .* sin(omega(diskInShaftNo)));
- 
- 
-% calculate Hertzian force
-fHertz = hertzianForce(yn, tn, domega);
+Q([13  21  41  45])   = EDisk .* ( ddomega(diskInShaftNo) .* sin(omega(diskInShaftNo)) + domega(diskInShaftNo).^2 .* cos(omega(diskInShaftNo)));
+Q([14  22  42  46]) = EDisk .* (-ddomega(diskInShaftNo) .* cos(omega(diskInShaftNo)) + domega(diskInShaftNo).^2 .* sin(omega(diskInShaftNo)));
  
  
 % total force 
-F = Q + fGravity + fHertz;
+F = Q + fGravity;
  
  
 % dynamic equation 

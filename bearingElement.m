@@ -1,17 +1,51 @@
-%% bearingElement
-% generate the stiffness, damping matrix of a bearing element without mass
+%% BEARINGELEMENT - Generate stiffness/damping matrices for massless bearings
+% Constructs local stiffness and damping matrices for bearing elements 
+% without concentrated mass in rotor dynamics systems.
+%
 %% Syntax
-% [Ke, Ce] = bearingElement(ANBearing)
+%   [Ke, Ce] = bearingElement(ANBearing)
+%
 %% Description
-% ANBearing is a struct saving the physical parameters of a bearing element
-% with fields: dofOfEachNodes, stiffness, damping
+% |BEARINGELEMENT| calculates the local stiffness and damping matrices 
+% for massless bearing elements. Supports:
+% * Orthotropic bearing properties (horizontal/vertical directions)
+% * Automatic matrix expansion to match nodal DOF
 %
-% Ke, Ce are stiffness, damping matrix of a bearing element. 
-% (n*n, n is the number of dofs on this bearing element)
-%% Symbols
-% k: stiffness of bearing
+%% Input Arguments
+% *ANBearing* - Bearing properties structure:
+%   .dofOfEachNodes     % DOF count at bearing node (scalar)
+%   .stiffness          % Horizontal stiffness [N/m]
+%   .stiffnessVertical  % Vertical stiffness [N/m]
+%   .damping            % Horizontal damping [Ns/m]
+%   .dampingVertical    % Vertical damping [Ns/m]
 %
-% c: damping of bearing
+%% Output Arguments
+% *Ke*     % Local stiffness matrix (n×n)
+% *Ce*     % Local damping matrix (n×n)
+%           % n = ANBearing.dofOfEachNodes
+%
+%% Algorithm
+% 1. Input validation:
+%    - Ensures single stiffness/damping value per direction
+% 2. Matrix construction:
+%    - Creates 2×2 directional matrices
+%    - Expands to full DOF size with zero padding
+%
+%% Example
+% % Create massless bearing parameters
+% bearingProps = struct('dofOfEachNodes', 4, ...
+%                       'stiffness', 1e8, ...
+%                       'stiffnessVertical', 1.2e8, ...
+%                       'damping', 500, ...
+%                       'dampingVertical', 600);
+% [Ke, Ce] = bearingElement(bearingProps);
+%
+%% See Also
+% femBearing, bearingElementMass, assembleLinear
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function [Ke, Ce] = bearingElement(ANBearing)

@@ -1,20 +1,49 @@
-%% generateHerzianForce
-% generate a "herzianForce.m" file in the root directory
-%% Syntax
-% generateHerzianForce(Mesh, ComponentSwitch, Shaft, Bearing, InterBearing)
-%% Description
-% Mesh: is a struct saving the Node info and created by establishModel()
+%GENERATEHERTZIANFORCE Create Hertzian contact force calculation function
 %
-% ComponentSwitch: is a struct saving the component info, such as
-% intermediate bearing, rub impact force, etc.
+% Syntax:
+%   generateHertzianForce(Mesh, ComponentSwitch, Shaft, Bearing)
+%   generateHertzianForce(Mesh, ComponentSwitch, Shaft, Bearing, InterBearing)
 %
-% Shaft: is a struct saving the shaft info
+% Input Arguments:
+%   Mesh - Discretization structure containing:
+%       .dofNum: integer                Total number of DOFs
+%       .dofInterval: [n×2 double]      DOF ranges for nodes
+%   ComponentSwitch - Component activation structure with:
+%       .hasIntermediateBearing: logical  Intermediate bearing flag
+%   Shaft - Shaft configuration structure with:
+%       .amount: integer                Number of shafts
+%   Bearing - Main bearing parameters structure with:
+%       .isHertzian: logical vector     Hertzian contact activation flags
+%       .inShaftNo: integer vector      Connected shaft indices
+%       .positionOnShaftNode: integer matrix  Node positions on shafts
+%       .radiusInnerRace: double vector  Inner race radii
+%       .radiusOuterRace: double vector  Outer race radii
+%       .rollerNum: integer vector       Roller counts
+%       .clearance: double vector        Initial clearances
+%       .contactStiffness: double vector Hertz stiffness coefficients
+%       .coefficient: double vector     Force exponents
+%   InterBearing - (Optional) Intermediate bearing parameters with:
+%       .isHertzian: logical vector     Hertzian contact flags
+%       .innerShaftNo: integer vector   Inner shaft indices
+%       .betweenShaftNo: integer matrix Connected shaft pairs
+%       .positionNode: integer matrix   Node positions
 %
-% Bearing: is a struct saving the info of bearing which is connected with  
-% ground 
+% Description:
+%   Generates hertzianForce.m file containing bearing contact force calculations:
+%   - Processes both main and intermediate bearings
+%   - Configures DOF mappings for shaft connections
+%   - Implements speed-dependent contact force equations
+%   - Handles ground-connected and shaft-connected bearing configurations
 %
-% InterBearing: is optional struct parameter. If intermediate bearing
-% exists in the model, please input this parameter
+% Notes:
+%   - Overwrites existing hertzianForce.m file
+%   - Requires companion function hertzianForceEq for force calculations
+%   - Automatic DOF adaptation for ground-connected bearings
+%
+% See also HERTZIANFORCEEQ, BEARINGLOOSINGFORCE, GENERATEDYNAMICEQUATION
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
 
 function generateHertzianForce(varargin)
 %% input

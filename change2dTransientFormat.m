@@ -13,18 +13,26 @@ set(gca, ...
         'FontSize'    , 7                           , ... 
         'FontName'    ,'Times New Roman'            ,...
         'layer'       , 'top') 
-    
-xlabelname = '$f$ (Hz)';
-ylabelname = '$t$ (s)';
-zlabelname = '$|$P1$|$';
+
+
+ylabelname = '$f$ (Hz)';
+xlabelname = '$t$ (s)';
+
 xlabel(xlabelname, 'FontName', 'Times New Roman', 'Interpreter','latex', 'FontSize',9);
 ylabel(ylabelname, 'FontName', 'Times New Roman', 'Interpreter','latex', 'FontSize',9);
-zlabel(zlabelname, 'FontName', 'Times New Roman', 'Interpreter','latex', 'FontSize',9);
-xlim([0 fftXlim])
+
+
+c = colorbar;
+c.FontSize = 7;
+c.Label.String = 'dB/Hz';
+c.Label.Interpreter ='latex';
+
+colormap(parula)   
+ylim([0 fftXlim])
 title('');
 set(gcf,'Units','centimeters','Position',[6 6 7.2 6]);
 
-set(gca, 'LooseInset'  , [0,0,0,0]);
-set(gca, 'OuterPosition', [0,0,1.09,0.92]);
+%set(gca, 'LooseInset'  , [0,0,0,0]);
+% set(gca, 'OuterPosition', [0,0,1.09,0.92]);
 
 end

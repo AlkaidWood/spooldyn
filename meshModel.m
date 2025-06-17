@@ -52,6 +52,20 @@
 %       .isBearing        % Bearing node flag
 %     .dofInterval        % [P×2] DOF ranges per node
 %     .dofOnNodeNo        % [Q×1] Node mapping for DOFs
+%   .Disk
+%     .positionOnShaftNode
+%   .Bearing
+%     .positionOnShaftNode
+%     .positionNode
+%   .IntermediateBearing
+%     .positionOnShaftNode
+%     .positionNode
+%   .RubImpact 
+%     .positionOnShaftNode
+%   .CouplingMisalignment
+%     .positionOnShaftNode
+%   .Custom
+%     .positionOnShaftNode
 %
 %% Key Features
 % 1. Automatic key node detection from:

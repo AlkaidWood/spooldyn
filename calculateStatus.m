@@ -1,4 +1,4 @@
-%% dynamicEquation
+%% calculateStatus
 % This is a customized function to calculate the acceleration, speed,
 % angular at time point "tn"
 %% Syntax

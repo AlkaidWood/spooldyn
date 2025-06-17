@@ -1,30 +1,54 @@
-%% calculateResponse
-% calculate the time history of the rotor system
-%% Syntax
-% [q, dq, t] = calculateResponse(Parameter, tSpan, samplingFrequency)
-%% Description
-% Parameter: is a struct saving the model data
+%CALCULATERESPONSE Compute time-domain response of rotor-bearing system
 %
-% tSpan = [tStart, tEnd] is a 1*2 array saving the solving information
+% Syntax:
+%   [q, dq, t] = calculateResponse(Parameter, tSpan, samplingFrequency)
+%   [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, q0, NameValueArgs)
 %
-% samplingFrequency: is a integer equaling to 1/step
+% Input Arguments:
+%   Parameter - System configuration structure containing:
+%       .Mesh: [1×1 struct]            Discretization data with .dofNum
+%       .Status: [1×1 struct]         Operation parameters:
+%           .vmax, .vmin: double      Max/min rotational speeds (rad/s)
+%           .acceleration: double     Rotational acceleration (rad/s²)
+%           .isUseCustomize: logical  Custom speed profile flag
+%   tSpan - [1×2 double]              Time range [tStart, tEnd] (seconds)
+%   samplingFrequency - double        Sampling rate (Hz)
+%   q0 - [n×1 double]                 Initial displacement vector (optional)
+%   NameValueArgs - Optional parameters:
+%       .isPlotStatus: logical       Plot rotational status (default: true)
+%       .reduceInterval: integer     Data downsampling factor (default: 1)
+%       .calculateMethod: char       Solver type: 'RK'/'ode45'/'ode15s' (default: 'RK')
+%       .options: struct             ODE solver options (ode45/ode15s only)
+%       .isUseBalanceAsInitial: logical Use balanced position as initial
+%       .isFreshInitial: logical      Force new balance calculation
 %
-% q0 is n*1 vector indicating the initial value of the displacement
+% Output Arguments:
+%   q - [n×m double]                 Displacement time history (DOFs × time)
+%   dq - [n×m double]                Velocity time history
+%   t - [1×m double]                 Time vector
+%   convergenceStr - char            Convergence status message
 %
-% isPlotStatus: is boolean to contol the plot of running status
+% Description:
+%   Solves rotor system dynamics using specified numerical method:
+%   - Runge-Kutta (4th order) for time-domain integration
+%   - MATLAB ODE solvers (ode45/ode15s) for stiff/non-stiff systems
+%   - Supports automatic initial condition generation from static balance
+%   - Includes data downsampling for large datasets
+%   - Monitors numerical convergence during simulation
 %
-% reduceInterval: denotes the re-sampling interval (scaler)
+% Examples:
+%   % Basic usage with default parameters
+%   [q, dq, t] = calculateResponse(sysParams, [0 10], 1000);
 %
-% q is time history of displacemnet (2D matrix, node * tNum)
+%   % Use ODE15s solver with custom options
+%   opts = odeset('RelTol',1e-6);
+%   [q, dq, t] = calculateResponse(sysParams, [0 5], 2000, ...
+%       'calculateMethod', 'ode15s', 'options', opts);
 %
-% dq is time history of velocity (2D matrix, node * tNum)
-% 
-% t is time series (row)
+% See also DYNAMICEQUATION, RUNGEKUTTA, ODE45, ODE15S, CALCULATEBALANCE
 %
-% convergenceStr: is a str deliver the message of convergence
-%
-% options is the output of the Matlab function odeset() for ode solver 
-
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
 
 function [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, q0, NameValueArgs)
 % check input
@@ -36,6 +60,7 @@ arguments % name value pair
     NameValueArgs.isPlotStatus = true; 
     NameValueArgs.reduceInterval = 1;
     NameValueArgs.calculateMethod = 'RK';
+    
     NameValueArgs.options = odeset();
     NameValueArgs.isUseBalanceAsInitial = false;
     NameValueArgs.isFreshInitial = false

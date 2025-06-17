@@ -1,23 +1,57 @@
-%% femDisk
-% generate the globe mass, stiffness, gyroscopic matrix, gravity, 
-% eccentricity of disks
+%% FEMDISK - Generate FEM matrices for disk components
+% Assembles global mass, gyroscopic, and N-matrix matrices with gravity 
+% and eccentricity vectors for disk elements in rotor systems.
+%
 %% Syntax
-% [M, G, N, Q, Fg, E] = femDisk(Disk,nodeDof)
+%   [M, G, N, Q, Fg, E] = femDisk(Disk, nodeDof)
+%
 %% Description
-% Disk is a struct saving the physical parameters of Disks with fields:
-% amount, dofOfEachNodes, radius, thickness, density, positionOnShaftNode
+% |FEMDISK| performs finite element matrix assembly for concentrated disk 
+% components. Handles:
+% * Translational/rotational inertia
+% * Gyroscopic effects
+% * Mass unbalance forces
+% * Gravity loading
 %
-% nodeDof: is a array (the number of nodes  * 1) saving the dof of each 
-% node.
+%% Input Arguments
+% *Disk* - Disk properties structure:
+%   .amount              % Number of disks (scalar)
+%   .dofOfEachNodes     % [N×1] DOF per mounted node
+%   .radius             % [N×1] Outer radii [m]
+%   .thickness          % [N×1] Axial thicknesses [m]
+%   .density            % [N×1] Material densities [kg/m³]
+%   .positionOnShaftNode% [N×1] Mounting node indices
 %
-% M, G, N are mass, stiffness, gyroscopic, N matrix of disks. (n*n,
-% n is the number of all nodes)
+% *nodeDof*             % [M×1] DOF count per system node
 %
-% Q is zero vector denoting the unbalance force
+%% Output Arguments
+% *M*      % Global mass matrix (n×n sparse)
+% *G*      % Global gyroscopic matrix (n×n sparse)
+% *N*      % Nonlinear matrix (n×n sparse)
+% *Q*      % Unbalance force vector (n×1 zeros)
+% *Fg*     % Gravity force vector (n×1)
+% *E*      % [N×1] Mass eccentricities [m]
 %
-% Fg is the gravity vector (n*1)
+%% Algorithm
+% 1. Element-level matrix generation for each disk:
+%    - Uses concentrated mass formulation
+%    - Calculates polar/diametral inertia
+% 2. Global matrix assembly:
+%    - Maps disk elements to system DOFs
+%    - Aggregates using sparse matrix addition
 %
-% E is eccentrcity of disk (m*1, m is the number of the disks)
+%% Example
+% % Generate disk matrices
+% diskParams = inputEssentialParameterBO().Disk;
+% nodeDOF = [4;4;...]; % System DOF configuration
+% [M_disk, G_disk] = femDisk(diskParams, nodeDOF);
+%
+%% See Also
+% diskElement, addElementIn, femShaft
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 

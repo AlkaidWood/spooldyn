@@ -1,18 +1,54 @@
-%% femInterBearing
-% generate the globe mass, stiffness, damping matrix, gravity of bearings
-%% Syntax
-% [M, K, C, Fg] = femInterBearing( InterBearing, nodeDof )
-%% Description
-% InterBearing is a struct saving the physical parameters of bearings with 
-% fields: amount, stiffness, damping, positionOnShaftNode
+%FEMINTERBEARING Generate FEM matrices for intermediate bearings with/without mass
 %
-% nodeDof: is a array (the number of nodes  * 1) saving the dof of each 
-% node.
+% Syntax:
+%   [M, K, C, Fg] = femInterBearing(InterBearing, nodeDof)
 %
-% M, K, C are mass, stiffness, damping matrix of intermediate bearings. 
-% (n*n, n is the number of all nodes)
+% Input Arguments:
+%   InterBearing - Intermediate bearing parameters structure with fields:
+%       .positionOnShaftNode: [n×2 double] Node positions connected to shaft (start and end)
+%       .positionNode: [n×2 double]       Node positions for mass bearings (if applicable)
+%       ... see also inputIntermediateBearing()
+%   nodeDof - [m×1 double]               Number of DOFs per node in global system
 %
-% Fg is gravity vector (n*1)
+% Output Arguments:
+%   M - [n×n sparse]                     Global mass matrix
+%   K - [n×n sparse]                     Global stiffness matrix
+%   C - [n×n sparse]                     Global damping matrix
+%   Fg - [n×1 double]                    Gravity force vector
+%
+% Description:
+%   Constructs global FEM matrices for intermediate bearings considering:
+%   - Bearings without mass (connects shaft nodes)
+%   - Bearings with concentrated mass (additional node connections)
+%   Automatically handles matrix assembly for different bearing types
+%
+% Notes:
+%   - Throws error if non-mass bearings receive multiple stiffness/damping values
+%   - Uses local coordinate transformation for bearing elements
+%
+% Example:
+%   % generate global matrix of Inter-shaft Bearing part
+%   % structure looks like: 
+%   % Node-1 -- k=1e6 c=300 -- mass=0.5 Node-7 -- k=1e6 c=200 -- Node-3
+%   % Node-2 -- k=1e6 c=300 -- mass=1 Node-8 -- k=1e6 c=200 -- Node-6
+%   Interbearing.amount = 2; % two inter-shaft bearing
+%   Interbearing.dofOfEachNodes = [2; 2]; % bearings have mass and  node
+%   Interbearing.isHertzian = [false; false]; % ignore Herzian contact
+%   Interbearing.isHertzianTop = [false; false];
+%   Interbearing.stiffness = [1e6, 1e6; 1e7, 1e7];
+%   Interbearing.stiffnessVertical = [1e6, 1e6; 1e7, 1e7];
+%   Interbearing.damping = [300, 200; 400, 500];
+%   Interbearing.dampingVertical = [300, 200; 400, 500];
+%   Interbearing.mass = [0.5; 1];
+%   Interbearing.positionOnShaftNode = [1, 3; 2, 6];
+%   Interbearing.positionNode = [7; 8];
+%   nodeDof = [4,4,4,4,4,4,2,2];
+%   [M, K, C, Fg] = femInterBearing(Interbearing, nodeDof);
+%
+% See also BEARINGELEMENTINTER, BEARINGELEMENTINTERMASS
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
 
 function  [M, K, C, Fg] = femInterBearing( InterBearing, nodeDof )
 

@@ -40,7 +40,7 @@ Status.vmin             = 0; % s, the minimum speed afterdeceleration
 % define your own function in calculateStatus() where the single time point
 % is input, the output must be [acceleration, speed, angular] corresponding
 % to input time "tn"
-Status.isUseCustomize   = true;
+Status.isUseCustomize   = false;
 Status.customize        = @(tn) calculateStatus(tn);
 
 % check input

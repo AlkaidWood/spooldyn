@@ -1,11 +1,66 @@
-%% plotModel
-% plot the geometry diagram about the whole rotor model
+%% PLOTMODEL - Visualize rotor system geometry
+% Generates 3D schematic diagrams of multi-shaft rotor systems with components.
+%
 %% Syntax
-%  plotModel(InitialParameter)
+%   plotModel(InitialParameter)
+%
 %% Description
-% InitialParameter including the whole geometry parameters of the rotor
-% 
-% The diagram for each shafts and the whole rotor wil be output in figures
+% |PLOTMODEL| creates visualization of rotor system components including:
+% * Shaft geometry with inner/outer radii
+% * Disk positions and dimensions
+% * Bearing locations and housing structures
+% * Intermediate bearing alignment offsets
+%
+% Outputs include:
+% * Individual shaft diagrams (.fig/.png)
+% * Composite system diagram (.fig/.png)
+% * Automatic directory creation ('modelDiagram')
+%
+%% Input Arguments
+% *InitialParameter* - System configuration structure containing:
+%   .Shaft              % Shaft properties (struct array)
+%     .totalLength      % [N×1] Axial lengths [m]
+%     .outerRadius      % [N×1] Outer radii [m]
+%     .innerRadius      % [N×1] Inner radii [m]
+%   .Disk               % Disk parameters (struct array)
+%     .inShaftNo        % [M×1] Parent shaft indices
+%     .positionOnShaftDistance % [M×1] Axial positions [m]
+%     .outerRadius      % [M×1] Disk radii [m]
+%     .thickness        % [M×1] Disk thicknesses [m]
+%   .Bearing            % Bearing parameters (struct array)
+%     .inShaftNo        % [K×1] Parent shaft indices
+%     .positionOnShaftDistance % [K×1] Axial positions [m]
+%   .IntermediateBearing % Intermediate bearing parameters (optional)
+%     .betweenShaftNo   % [L×2] Connected shaft indices
+%     .positionOnShaftDistance % [L×2] Connection positions [m]
+%
+%% Output
+% Generates in './modelDiagram' directory:
+% * diagramOfShaft[n].fig/png    % Individual shaft visualizations
+% * theWholeModel.fig/png         % Composite system diagram
+%
+%% Visualization Features
+% 1. Cylindrical shaft/disk representations
+% 2. Triangular bearing housing models
+% 3. Automatic intermediate bearing alignment:
+%    - Calculates shaft position offsets
+% 4. Multi-resolution component rendering:
+%    - 20 nodes for shafts
+%    - 30 nodes for disks
+%    - 15 nodes for bearings
+%
+%% Example
+% % Generate and view system diagrams
+% sysParams = inputEssentialParameterBO();
+% plotModel(sysParams);
+% winopen('modelDiagram/theWholeModel.png');
+%
+%% See Also
+% addCylinder, addTriangularBlock, CombFigs
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function plotModel(InitialParameter)

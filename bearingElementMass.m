@@ -1,22 +1,59 @@
-%% bearingElementMass
-% generate the mass, stiffness, damping matrix, gravity vector of a bearing
-% element with mass
+%% BEARINGELEMENTMASS - Generate FEM matrices for bearings with mass
+% Constructs mass, stiffness, damping matrices and gravity vector for 
+% bearing elements with concentrated masses in rotor dynamics systems.
+%
 %% Syntax
-% [Me, Ke, Ce, Fge] = bearingElementMass(AMBearing)
+%   [Me, Ke, Ce, Fge] = bearingElementMass(AMBearing)
+%
 %% Description
-% AMBearing is a struct saving the physical parameters of a bearing element
-% with fields: dofOfEachNodes, stiffness, damping, mass, dofOnShaftNode
+% |BEARINGELEMENTMASS| calculates local matrices for mass-bearing elements 
+% using multi-node modeling. Handles:
+% * Distributed stiffness/damping between mass nodes
+% * Gravity force integration
+% * Orthotropic bearing properties (horizontal/vertical directions)
 %
-% Me, Ke, Ce are mass, stiffness, damping cell of a bearing element. 
-% (n*n, n is the number of dofs on this bearing element)
-% 
-% Fge is gravity vector in column
-%% Symbols
-% m: mass of bearing
-% 
-% k: stiffness of bearing
+%% Input Arguments
+% *AMBearing* - Bearing properties structure:
+%   .dofOfEachNodes    % [1×K] DOF per node
+%   .stiffness         % [1×M] Horizontal stiffness values [N/m]
+%   .stiffnessVertical % [1×M] Vertical stiffness values [N/m]
+%   .damping           % [1×M] Horizontal damping values [Ns/m]
+%   .dampingVertical   % [1×M] Vertical damping values [Ns/m]
+%   .mass              % [1×K] Concentrated masses [kg] (K ≤ M-1)
+%   .dofOnShaftNode    % DOF count at shaft connection node
 %
-% c: damping of bearing
+%% Output Arguments
+% *Me*     % Mass matrix cell array (2×2 cell of matrices)
+% *Ke*     % Stiffness matrix cell array (2×2 cell of matrices)
+% *Ce*     % Damping matrix cell array (2×2 cell of matrices)
+% *Fge*    % Gravity force vector [N] (n×1)
+%
+%% Algorithm
+% 1. Matrix assembly stages:
+%    a) Shaft connection node stiffness/damping
+%    b) Inter-mass node stiffness/damping links
+%    c) Mass matrix diagonal assembly
+% 2. Cell matrix organization:
+%    - Partitioned into shaft/bearing submatrices
+%    - Enables direct global matrix insertion
+%
+%% Example
+% % Create mass-bearing parameters
+% bearingProps = struct('dofOfEachNodes', [4 2], ...
+%                      'stiffness', [1e8, 5e7], ...
+%                      'stiffnessVertical', [1.2e8, 6e7], ...
+%                      'damping', [500, 300], ...
+%                      'dampingVertical', [600, 350], ...
+%                      'mass', [3.5, 2.1], ...
+%                      'dofOnShaftNode', 4);
+% [Me, Ke, Ce, Fg] = bearingElementMass(bearingProps);
+%
+%% See Also
+% femBearing, bearingElement, assembleLinear
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function [Me, Ke, Ce, Fge] = bearingElementMass(AMBearing)

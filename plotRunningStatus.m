@@ -78,6 +78,6 @@ set(gcf,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
 figureName2 = ['runningStatusDiagram/statusOfAcceleration', '.fig'];
 savefig(h3,figureName2,'compact')
 
-close all
+close([h1 h2 h3])
 
 end

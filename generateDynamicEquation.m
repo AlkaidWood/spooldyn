@@ -1,11 +1,55 @@
-%% generateDynamicEquation
-% generate a 'dynamicEquation.m' file
-%% Syntax
-% generateDynamicEquation(Parameter)
-%% Description
-% Parameter: is a struct saving the model data
+%GENERATEDYNAMICEQUATION Generate dynamic equation file from system parameters
 %
-% output is generating a dynamicEquation.m file in the root directory
+% Syntax:
+%   generateDynamicEquation(Parameter)
+%
+% Input Arguments:
+%   Parameter - System configuration structure containing:
+%       .Status: [1×1 struct]              Runtime status parameters
+%           .isUseCustomize: logical      Custom speed profile flag
+%           .duration: double             Operation duration (s)
+%           .acceleration: double         Rotational acceleration (rad/s²)
+%           .vmax: double                 Maximum rotational speed (rad/s)
+%           .vmin: double                 Minimum rotational speed (rad/s)
+%       .ComponentSwitch: [1×1 struct]    Component activation flags
+%           .hasLoosingBearing: logical   Bearing loosing state flag
+%           .hasGravity: logical          Gravity consideration flag
+%           .hasHertzianForce: logical     Hertz contact force flag
+%           .hasRubImpact: logical        Rub-impact force flag
+%           .hasCouplingMisalignment: logical  Misalignment force flag
+%           .hasCustom: logical           Custom force flag
+%       .Mesh: [1×1 struct]               Discretization results
+%       .Matrix: [1×1 struct]            System matrices (mass, stiffness, etc.)
+%       .Shaft: [1×1 struct]             Shaft parameters
+%       .Disk: [1×1 struct]              Disk parameters
+%       .Bearing: [1×1 struct]           Bearing parameters
+%       .IntermediateBearing: [1×1 struct]  Intermediate bearing params
+%       .RubImpact: [1×1 struct]         Rub-impact parameters
+%       .LoosingBearing: [1×1 struct]    Loosing bearing parameters
+%       .CouplingMisalignment: [1×1 struct]  Coupling parameters
+%
+% Description:
+%   Generates dynamicEquation.m file containing system's differential equations:
+%   - Handles constant/speed-varying operation modes
+%   - Incorporates rotational speed profiles with acceleration/deceleration
+%   - Assembles system matrices and external forces
+%   - Supports multiple force components (Hertzian, rub-impact, etc.)
+%   - Automatically manages bearing loosing state transitions
+%
+% Notes:
+%   - Overwrites existing dynamicEquation.m file
+%   - Requires write permissions in current directory
+%   - Generates helper functions for specific force components
+%
+% Example:
+%   % Generate equations for default parameter configuration
+%   loadSystemParams();
+%   generateDynamicEquation(Parameter);
+%
+% See also HERTZIANFORCE, RUBIMPACTFORCE, BEARINGLOOSINGFORCE, MISALIGNMENTFORCE
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
 
 
 function generateDynamicEquation(Parameter)

@@ -1,21 +1,44 @@
-%% bearingElementInter
-% generate the stiffness, damping matrix of a intermediate bearing element 
-%% Syntax
-% [Ke, Ce] = bearingElementInter(ABearing)
-%% Description
-% ABearing is a struct saving the physical parameters of a intermediate 
-% bearing element with fields: dofOnShaftNode, stiffness, damping
+%BEARINGELEMENTINTER Generate stiffness/damping matrices for non-mass intermediate bearings
 %
-% Ke, Ce are stiffness, damping cell of a bearing element. 
-% (n*n, n is the number of dofs on this intermediate bearing element)
-%% Symbols
-% kV: horizontal stiffness of intermediate bearing
+% Syntax:
+%   [Ke, Ce] = bearingElementInter(ABearing)
 %
-% kW: vertical stiffness of intermediate bearing
+% Input Arguments:
+%   ABearing - Bearing element configuration structure with fields:
+%       .dofOnShaftNode: [1×2 double]     DOFs count on connected shaft nodes
+%       .stiffness: double                Direct stiffness in principal directions
+%       .stiffnessVertical: double        Vertical stiffness (optional, same as stiffness by default)
+%       .damping: double                  Direct damping in principal directions
+%       .dampingVertical: double          Vertical damping (optional, same as damping by default)
 %
-% cV: horizontal damping of intermediate bearing
+% Output Arguments:
+%   Ke - [4×4 cell array]                 Element stiffness matrix partitions
+%   Ce - [4×4 cell array]                 Element damping matrix partitions
 %
-% cW: vertical damping of intermediate bearing
+% Description:
+%   Creates partitioned stiffness and damping matrices for intermediate bearings
+%   without concentrated mass. Matrices are generated in local coordinates and
+%   partitioned for connection between two shaft nodes.
+%
+% Notes:
+%   - Throws error if multiple stiffness/damping values are provided
+%   - Vertical stiffness/damping defaults to horizontal values if not specified
+%   - Matrix partitions follow node connectivity order [start_node, end_node]
+%
+% Example:
+%   generate K11 K12 K21 K22 C11 C12 C21 C22 for inter-shaft bearing without
+%   % mass
+%   AInterbearing.dofOnShaftNode = [4, 4];
+%   AInterbearing.stiffness = 1e6;
+%   AInterbearing.stiffnessVertical = 1e6;
+%   AInterbearing.damping = 200;
+%   AInterbearing.dampingVertical = 300;
+%   [Ke, Ce] = bearingElementInter(AInterbearing);
+%
+% See also BEARINGELEMENTINTERMASS, ADDELEMENTIN
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
 
 function [Ke, Ce] = bearingElementInter(ABearing)
 %%

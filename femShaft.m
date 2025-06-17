@@ -1,20 +1,59 @@
-%% femShaft
-% generate the globe mass, stiffness, gyroscopic matrix, gravity of shafts
+%% FEMSHAFT - Generate FEM matrices for shaft components
+% Assembles global mass, stiffness, gyroscopic, and N-matrix matrices with 
+% gravity vector for shaft structures using Timoshenko beam elements.
+%
 %% Syntax
-% [M, K, G, N, Fg] = femShaft(Shaft, nodeDistance)
+%   [M, K, G, N, Fg] = femShaft(Shaft, nodeDistance)
+%
 %% Description
-% Shaft is a struct saving the physical parameters of shafts with fields:
-% amount, dofOfEachNodes, outerRadius, innerRadius, density,
-% elasticModulus, poissonRatio.
+% |FEMSHAFT| performs finite element matrix assembly for multi-shaft rotor
+% systems. Implements Timoshenko beam theory for:
+% * Distributed mass/stiffness effects
+% * Gyroscopic moments
+% * Geometric nonlinearities
+% * Gravity loading
 %
-% nodeDistance: is a cell (Physics.amount * 1) saving the distance
-% information. nodeDistance{i} saves all distance from left end of the i-th 
-% Shaft to each node (m)
+%% Input Arguments
+% *Shaft* - Shaft properties structure:
+%   .amount            % Number of shafts (scalar)
+%   .dofOfEachNodes    % [N×1] DOF per node (vector)
+%   .outerRadius       % [N×1] Outer radii [m]
+%   .innerRadius       % [N×1] Inner radii [m]
+%   .density           % [N×1] Material densities [kg/m³]
+%   .elasticModulus    % [N×1] Elastic moduli [Pa]
+%   .poissonRatio      % [N×1] Poisson's ratios
 %
-% M, K, G, N are mass, stiffness, gyroscopic, N matrix of shafts. (n*n,
-% n is the number of all nodes on shafts)
+% *nodeDistance*       % [N×1 cell] Node positions per shaft:
+%   {i} = [d1 d2... dn] % Axial positions for shaft i [m]
 %
-% Fg is the gravity vector (n*1)
+%% Output Arguments
+% *M*      % Global mass matrix (n×n sparse)
+% *K*      % Global stiffness matrix (n×n sparse)
+% *G*      % Global gyroscopic matrix (n×n sparse)
+% *N*      % Nonlinear geometric stiffness matrix (n×n sparse)
+% *Fg*     % Gravity force vector (n×1)
+%
+%% Algorithm
+% 1. Element-level matrix generation:
+%    - Uses Timoshenko beam formulation
+%    - Accounts for annular cross-sections
+% 2. Per-shaft matrix assembly:
+%    - Combines element matrices with overlap at shared nodes
+% 3. Global system assembly:
+%    - Stacks shaft matrices diagonally
+%
+%% Example
+% % Generate shaft FEM matrices
+% shaftParams = inputEssentialParameterBO().Shaft;
+% nodeDist = {linspace(0,1,10), linspace(0,0.5,5)};
+% [M, K, G, ~, Fg] = femShaft(shaftParams, nodeDist);
+%
+%% See Also
+% shaftElement, assembleLinear, meshModel
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function [M, K, G, N, Fg] = femShaft(Shaft, nodeDistance)

@@ -1,31 +1,55 @@
-%% diskElement
-% generate the mass, stiffness, gyroscopic matrix, gravity vector and eccentricity of a disk element
+%% DISKELEMENT - Generate element matrices for disk components
+% Computes mass, gyroscopic, and N-matrix matrices with gravity vector and
+% eccentricity for individual disk elements in rotor dynamics analysis.
+%
 %% Syntax
-% [Me, Ge, Ne, Fge, Ee] = diskElement(ADisk)
+%   [Me, Ge, Ne, Fge, Ee] = diskElement(ADisk)
+%
 %% Description
-% ADisk is a struct saving the physical parameters of a disk element with
-% fields: dofOfEachNodes, radius, density, thickness, eccentricity
+% |DISKELEMENT| calculates FEM component matrices for disk elements using:
+% * Thin disk approximation
+% * Rotational inertia effects
+% * Mass unbalance consideration
 %
-% Me, Ge, Ne are mass, gyroscopic and N matrix of a disk element. 
-% (n*n, n is the number of all dofs on this shaft element)
+%% Input Arguments
+% *ADisk* - Disk properties structure:
+%   .dofOfEachNodes    % DOF count at mounting node (scalar)
+%   .outerRadius       % Disk outer radius [m]
+%   .innerRadius       % Disk inner radius [m]
+%   .density           % Material density [kg/m³]
+%   .thickness         % Axial thickness [m]
+%   .eccentricity      % Mass eccentricity [m]
 %
-% Fge is gravity vector of a disk element (n*1)
+%% Output Arguments
+% *Me*     % Element mass matrix (4×4)
+% *Ge*     % Element gyroscopic matrix (4×4)
+% *Ne*     % Nonlinear matrix (4×4)
+% *Fge*    % Gravity force vector (4×1)
+% *Ee*     % Eccentricity force component [N×1]
 %
-% Ee is eccentricity of disk
-%% Symbols
-% m: mass of disk
+%% Formulation
+% 1. Mass Calculation:
+%    $ m = \pi \rho t (r_o^2 - r_i^2) $
+% 2. Inertia Terms:
+%    $ I_d = \frac{1}{4}m(r_o^2 + r_i^2) $ (Diametral)
+%    $ I_p = \frac{1}{2}m(r_o^2 + r_i^2) $ (Polar)
+% 3. Matrix Construction:
+%    - Mass matrix combines translational (MT) and rotational (MR) terms
+%    - Gyroscopic matrix accounts for polar inertia effects
 %
-% r: radius of disk
+%% Example
+% % Create disk parameters
+% diskProps = struct('outerRadius', 0.1, 'innerRadius', 0.05, ...
+%                    'density', 7850, 'thickness', 0.02, ...
+%                    'eccentricity', 1e-4);
+% [Me, Ge] = diskElement(diskProps);
 %
-% rho: density 
+%% See Also
+% femDisk, shaftElement, assembleLinear
 %
-% dof: degree of freedom of this disk element
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
 %
-% Id: rotational inertial about diameter
-% 
-% Ip: polar rotational inertial
-%
-% eDisk: eccentricity of the disk
 
 
 function [Me, Ge, Ne, Fge, Ee] = diskElement(ADisk)

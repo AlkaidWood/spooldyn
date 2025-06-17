@@ -1,10 +1,61 @@
-%% plotMesh
-% plot the  diagram about the meshing result
+%% PLOTMESH - Visualize FEM mesh discretization results
+% Generates schematic diagrams of mesh configuration with component annotations.
+%
 %% Syntax
-%  plotMesh(InitialParameter, keyPointsDistance, nodeDistance)
+%   plotMesh(Parameter)
+%
 %% Description
-% Parameter: includes the whole geometry parameters of the rotor and the
-% meshing information
+% |PLOTMESH| creates visualization of FEM mesh discretization showing:
+% * Key node locations (bearings/disks/special components)
+% * Mesh node distribution
+% * Component-node relationships
+% * Bearing type markers
+%
+% Outputs include:
+% * Per-shaft mesh diagrams (.fig/.png)
+% * Automatic directory creation ('meshDiagram')
+%
+%% Input Arguments
+% *Parameter* - System configuration structure containing:
+%   .Mesh               % Mesh data from |meshModel|
+%     .keyPointsDistance% [N×1 cell] Key node positions per shaft
+%     .nodeDistance     % [N×1 cell] Node positions per shaft  
+%     .Node             % [M×1 struct] Node properties:
+%       .name           % Node ID
+%       .onShaftNo      % Parent shaft index
+%       .onShaftDistance% Axial position [m]
+%       .isBearing      % Bearing node flag
+%   .Shaft              % Shaft geometry parameters
+%   .ComponentSwitch   % Active component flags
+%
+%% Output
+% Generates in './meshDiagram' directory:
+% * MeshResultOfShaft[n].fig/png  % Individual shaft mesh diagrams
+%
+%% Visualization Features
+% 1. Differentiated markers for:
+%    - Key nodes (red circles)
+%    - Regular nodes (black ticks)
+%    - Bearing nodes (purple markers)
+% 2. Component annotations:
+%    - Disk locations (D#)
+%    - Bearing types (B#/B# Loose)  
+%    - Intermediate bearings (IB#)
+%    - Rub impacts (Rub#)
+% 3. Automatic layout adjustment for multi bearings
+%
+%% Example
+% % Generate and view mesh diagrams
+% Params = meshModel(baseParams);
+% plotMesh(Params); 
+% winopen('meshDiagram/MeshResultOfShaft1.png');
+%
+%% See Also
+% meshModel, plotModel, establishModel
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function plotMesh(Parameter)

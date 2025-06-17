@@ -10,7 +10,6 @@ function hf = CombFigs(varargin)
 %          CombFigs(figname，figfiles)  figname为合并后的fig文件名,
 %                                       figfiles为待合并的fig文件，cell数组格式，将figfiles文件合并为figname文件 
 % By ZFS@wust 20210905
-% 获取更多Matlab/Simulink原创资料和程序，清关注微信公众号：Matlab Fans
 
 if  isempty(varargin)                   % 不输入
     files = dir( '*.fig' );

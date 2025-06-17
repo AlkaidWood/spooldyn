@@ -1,23 +1,78 @@
-%% femBearing
-% generate the global mass, stiffness, damping matrix, gravity of bearings
+%% FEMBEARING - Generate FEM matrices for bearing components
+% Assembles global mass, stiffness, and damping matrices with gravity vector 
+% for bearing systems. Supports normal and loose bearing configurations.
+%
 %% Syntax
-% [M, K, C, Fg] = femBearing(Bearing, nodeDof)
+%   [M, K, C, Fg] = femBearing(Bearing, nodeDof)
+%   [M, K, C, Fg, KLoose, CLoose] = femBearing(Bearing, nodeDof, LoosingBearing)
 %
-% [M, K, C, Fg, KLoose, CLoose] = femBearing(Bearing, nodeDof, LoosingBearing)
 %% Description
-% Bearing is a struct saving the physical parameters of bearings with 
-% fields: amount, dofOfEachNodes, stiffness, damping, mass,
-% positionOnShaftNode, positionNode
+% |FEMBEARING| handles both standard and mass-containing bearings, with 
+% special handling for bearings with clearance/looseness effects. Features:
+% * Dual operation modes: normal vs. loose bearing configurations
+% * Distributed stiffness/damping modeling
+% * Gravity force integration
 %
-% nodeDof: is a array (the number of nodes  * 1) saving the dof of each 
-% node.
+%% Input Arguments
+% *Bearing* - Bearing properties structure:
+%   .amount             % Number of bearings (scalar)
+%   .dofOfEachNodes     % [N×n] DOF per node
+%   .stiffness          % [N×n] Bearing horizontal stiffness coefficients [N/m]
+%   .stiffnessVertical  % [N×n] Bearing vertical stiffness coefficients [N/m]
+%   .damping            % [N×n] Bearing horizontal Damping coefficients [Ns/m]
+%   .dampingVertical    % [N×n] Bearing vertical Damping coefficients [Ns/m]
+%   .mass               % [N×n] Bearing masses [kg]
+%   .positionOnShaftNode% [N×1] Mounting on shaft node indices
+%   .positionNode       % [N×1] mass node indices of bearings
+% N is number of bearings
+% n is the maximum number of bearing mass blocks +1 in your rotor system
 %
-% M, K, C are mass, stiffness, damping matrix of bearings. (n*n,
-% n is the number of all nodes)
+% *nodeDof*             % [M×1] DOF count per system node, M is the number
+%                         of nodes
 %
-% Fg is gravity vector of bearings
+% *LoosingBearing*     % (Optional) Loose bearing parameters:
+%   .inBearingNo       % Bearing indices with clearance
+%   .loosingStiffness  % Modified vertical stiffness values [N/m]
+%   .loosingDamping    % Modified vertical damping values [Ns/m]
 %
-% KLoose, CLoose are mass, stiffness, damping matrix of loosing bearings
+%% Output Arguments
+% *M*          % Global mass matrix (n×n sparse)
+% *K*          % Global stiffness matrix (n×n sparse)
+% *C*          % Global damping matrix (n×n sparse)
+% *Fg*         % Gravity force vector (n×1)
+% *KLoose*     % Loose bearing stiffness matrix (n×n sparse)
+% *CLoose*     % Loose bearing damping matrix (n×n sparse)
+% n is the number of dofs of entire rotor model
+%
+%% Algorithm
+% 1. Bearing classification:
+%    - Normal bearings (mass = 0): Direct stiffness/damping addition
+%    - Mass bearings: Multi-node element assembly
+% 2. Loose bearing handling:
+%    - Modifies stiffness/damping for specified bearings
+%    - Maintains separate matrix copies for dynamic switching
+%
+%% Example
+% % Standard bearing assembly
+% bearingParams = inputBearingHertzBO().Bearing;
+% nodeDOF = [4;4;...];
+% Bearing.positionOnShaftNode = [3; 2;...];
+% Bearing.positionNode = [12; 16;...];
+% [M_bear, K_bear] = femBearing(bearingParams, nodeDOF);
+%
+% % Loose bearing configuration
+% looseParams = struct('inBearingNo', 2, 'loosingStiffness', 1e6, ...);
+% nodeDOF = [4;4;...];
+% Bearing.positionOnShaftNode = [3; 2;...];
+% Bearing.positionNode = [12; 16;...];
+% [M, K, C, Fg, KL, CL] = femBearing(bearingParams, nodeDOF, looseParams);
+%
+%% See Also
+% bearingElement, bearingElementMass, meshModel
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function varargout = femBearing(varargin)

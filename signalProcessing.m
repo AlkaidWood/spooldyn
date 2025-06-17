@@ -1,67 +1,95 @@
-%% signalProcessing
-% process the signal calculated by calculateResponse.m
-%% Syntax
-% signalProcessing(q, dq, t, Parameter, SwitchFigure)
+%SIGNALPROCESSING Post-process rotor system response data and generate visualizations
 %
-% signalProcessing(q, dq, t, Parameter, SwitchFigure, tSpan)
+% Syntax:
+%   signalProcessing(q, dq, t, Parameter, SwitchFigure)
+%   signalProcessing(q, dq, t, Parameter, SwitchFigure, tSpan)
+%   signalProcessing(q, dq, t, Parameter, SwitchFigure, tSpan, samplingFrequency, NameValueArgs)
 %
-% signalProcessing(q, dq, t, Parameter, SwitchFigure, tSpan, samplingFrequency)
-%% Description
-% q is time history of displacemnet (2D matrix, node * tNum)
+% Input Arguments:
+%   q - [n×m double]                 Displacement time history (DOFs × time)
+%   dq - [n×m double]                Velocity time history
+%   t - [1×m double]                 Time vector (seconds)
+%   Parameter - System configuration structure containing:
+%       .Mesh: [1×1 struct]          Discretization data with:
+%           .nodeNum: integer         Total number of nodes
+%           .dofOnNodeNo: integer     DOF indices per node
+%       .Status: [1×1 struct]        Operational parameters:
+%           .vmax: double            Maximum rotational speed (rad/s)
+%   SwitchFigure - [1×1 struct]      Visualization control flags:
+%       .displacement: logical       Enable displacement plots
+%       .axisTrajectory: logical     Enable 2D axis trajectory plots
+%       .phase: logical             Enable phase portraits
+%       .fftSteady: logical         Enable steady-state FFT
+%       .fftTransient: logical      Enable transient FFT
+%       .poincare: logical          Enable Poincaré maps
+%       .saveFig: logical           Save .fig files
+%       .saveEps: logical           Save .eps files
+%       .axisTrajectory3d: logical  Enable 3D shaft trajectories
+%       .poincare_phase: logical    Enable phase+Poincaré composite plots
+%   tSpan - [1×2 double]             Processing time range [start, end] (seconds)
+%   samplingFrequency - double      Original sampling frequency (Hz)
+%   NameValueArgs - Optional parameters:
+%       .fftXlim: double            Maximum FFT frequency display (default: 500Hz)
+%       .T_window: double           STFT window duration (default: (tSpan(2)-tSpan(1))/20s)
+%       .overlap: double            STFT window overlap ratio (default: 2/3)
+%       .fftisPlot3DTransient: logical 3D transient FFT visualization
+%       .fftSteadyLog: logical      Logarithmic FFT amplitude scale
+%       .reduceInterval: integer    Data downsampling factor
+%       .isPlotInA4: logical        A4 paper formatting
+%       .f: [1×k double]            Custom frequency vector for STFT
 %
-% dq is time history of velocity (2D matrix, node * tNum)
-% 
-% t is time series (row)
-% 
-% Parameter: is a struct saving the model data
+% Description:
+%   Performs comprehensive post-processing of rotor system dynamics data:
+%   - Generates time-domain plots: displacement histories, velocity profiles
+%   - Creates phase space visualizations: 2D/3D trajectories, Poincaré sections
+%   - Conducts spectral analysis: steady-state/transient FFT, STFT spectrograms
+%   - Supports multi-shaft systems with interactive 3D trajectory visualization
+%   - Implements advanced signal processing techniques:
+%       * Short-Time Fourier Transform (STFT) with customizable windows
+%       * Automated Poincaré section extraction at rotational periods
+%       * Multi-resolution analysis through data downsampling
 %
-% SwitchFigure: is a struct with fields: displacement, axisTrajector,
-% phase, fftSteady, fftTransient, poincare, saveFig. all of these fieldes
-% save the boolean data
+% Features:
+%   - Automated directory management for output organization
+%   - Intelligent DOF labeling for bearings and shaft components
+%   - Adaptive unit handling (meters/radians) based on DOF type
+%   - Publication-quality figure formatting with LaTeX-style annotations
+%   - Multi-format output support (.fig, .png, .eps)
 %
-% tSpan = [tStart, tEnd] denotes the start and end points where the signal
-% would be processed (default: [t(1), t(end)])
+% Examples:
+%   % Basic usage with default visualization parameters
+%   load simulationData.mat
+%   Switch = struct('displacement',true, 'fftSteady',true);
+%   signalProcessing(q, dq, t, sysParams, Switch);
 %
-% samplingFrequency:  is a integer equaling to 1/step (default = [ ])
+%   % Advanced transient analysis with custom STFT parameters
+%   signalProcessing(q, dq, t, sysParams, Switch, [1 5], 2000, ...
+%       'T_window', 0.2, 'overlap', 0.75, 'fftXlim', 1000);
 %
-% NameValue: 
+% See also CALCULATERESPONSE, SPECTROGRAM, PLOT2DSTANDARD, SAVEFIGURE
 %
-% fftXlim, the left boundary of xTick in the fftSteady figure, default
-% 3*Vmax/(2*pi)
-%
-% fftTimeInterval, the length of pre time piece in the fftTransient figure, 
-% unit (s), default (tSpan(2) - tSpan(1)) / 20
-%
-% fftSuperpositionRatio, the superposition ratio of each time piece in the
-% fftTransient figure, default 0.5
-% 
-% fftisPlot3DTransient, is a boolean contonling the kind of fftTransient
-% figure
-%
-% reduceInterval: denotes the re-sampling interval (scaler)
-% 
-% isPlotInA4: is a boolean controling the size of figure
-%
-% fftSteadyLog: is a boolean controling the Y-axis (log)
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
 
 
-function signalProcessing(q, dq, t, Parameter, SwitchFigure, tSpan, samplingFrequency, NameValueArgs)
+function signalProcessing(q, dq, t, Parameter, tSpan, samplingFrequency, SwitchFigure, NameValueArgs)
 
 arguments % name value pair
     q
     dq
     t
     Parameter
-    SwitchFigure
     tSpan
-    samplingFrequency 
-    NameValueArgs.fftXlim = Parameter.Status.vmax/(2*pi) * 3; % (Hz)
-    NameValueArgs.fftTimeInterval = (tSpan(2) - tSpan(1)) / 20; % (s)
-    NameValueArgs.fftSuperpositionRatio = 0.5;
+    samplingFrequency
+    SwitchFigure = struct('displacement', true, 'axisTrajectory', false, 'phase', false, 'fftSteady', true, 'fftTransient', false, 'poincare', false, 'axisTrajectory3d', false, 'poincare_phase', false)
+    NameValueArgs.fftXlim = 500; % (Hz)
+    NameValueArgs.T_window = (tSpan(2) - tSpan(1)) / 20; % (s), for transient FFT
+    NameValueArgs.overlap = 2/3 % for transient FFT
     NameValueArgs.fftisPlot3DTransient = true;
     NameValueArgs.fftSteadyLog = false;
     NameValueArgs.reduceInterval = 1;
     NameValueArgs.isPlotInA4 = false;
+    NameValueArgs.f = 1:0.2:200;
 end
 
 % input parameter
@@ -83,11 +111,8 @@ refreshDirectory('signalProcess');
 %%
 
 % find the index in t to match tSpan
-timeStart   = tSpan(1); 
-timeEnd     = tSpan(2);
-FINDERROR   = 0.00005;
-tStartIndex = find(( (timeStart-FINDERROR)<t & t<(timeStart+FINDERROR) ),1); 
-tEndIndex   = find(( (timeEnd-FINDERROR)<t & t<(timeEnd+FINDERROR) ),1); 
+[~, tStartIndex] = min(abs(t - tSpan(1)));
+[~, tEndIndex]   = min(abs(t - tSpan(2))); 
 
 %%
 
@@ -137,7 +162,7 @@ if SwitchFigure.displacement
         h = figure('Visible', 'off');
         isUsedInA4 = NameValueArgs.isPlotInA4;
         [~] = plot2DStandard(xspan, yspan(iDof,:), xlabelname, ylabelname, isUsedInA4);
-        %title(figureName,'Fontname', 'Arial');
+        title(figureName,'Fontname', 'Arial');
         figurePath = ['signalProcess/displacement/', figureIdentity{iDof}];
         isVisible = true;
         saveFigure(h, figurePath, SwitchFigure.saveFig, isVisible, SwitchFigure.saveEps);
@@ -178,7 +203,7 @@ if SwitchFigure.axisTrajectory
         isUsedInA4 = NameValueArgs.isPlotInA4;
         [~] = plot2DStandard(xspan(iNode,:),yspan(iNode,:), xlabelname, ylabelname, isUsedInA4);
         set(gcf,'Units','centimeters','Position',[6 6 7.2 4]);%Set the size of figure(for A4)
-        %title(figureName, 'Fontname', 'Arial');
+        title(figureName, 'Fontname', 'Arial');
         figurePath = ['signalProcess/axisTrajectory/',['Node-',num2str(iNode)]];
         isVisible = true;
         saveFigure(h, figurePath, SwitchFigure.saveFig, isVisible, SwitchFigure.saveEps);
@@ -214,7 +239,7 @@ if SwitchFigure.phase
         isUsedInA4 = NameValueArgs.isPlotInA4;
         [~] = plot2DStandard(xspan(iDof,:),yspan(iDof,:), xlabelname, ylabelname, isUsedInA4);
         set(gcf,'Units','centimeters','Position',[6 6 7.2 4]);%Set the size of figure(for A4)
-        %title(figureName,'Fontname', 'Arial');
+        title(figureName,'Fontname', 'Arial');
         figurePath = ['signalProcess/phase/',figureIdentity{iDof}];
         isVisible = true;
         saveFigure(h, figurePath, SwitchFigure.saveFig, isVisible, SwitchFigure.saveEps);
@@ -253,7 +278,7 @@ if SwitchFigure.fftSteady
         isOnlySet = true;
         [~] = plot2DStandard([], [], xlabelname, ylabelname, isUsedInA4, isOnlySet);
         xlim([0 NameValueArgs.fftXlim])
-        %title(figureName,'Fontname', 'Arial');
+        title(figureName,'Fontname', 'Arial');
         % save figure
         figurePath = ['signalProcess/fftSteady/',figureIdentity{iDof}];
         isVisible = true;
@@ -268,97 +293,71 @@ if SwitchFigure.fftTransient
     
     refreshDirectory('signalProcess/fftTransient')
     
-    timeInterval = NameValueArgs.fftTimeInterval;
-    superpositionRatio = NameValueArgs.fftSuperpositionRatio;
-    tUse = t(:, tStartIndex:tEndIndex);
-    % length of per divided area (index)
-    intervalLength = floor(timeInterval * samplingFrequency/NameValueArgs.reduceInterval); 
-    intervalLength = intervalLength - mod(intervalLength,2); % even number
-    intervalNum = floor(((timeEnd-timeStart)-timeInterval)/(timeInterval*(1-superpositionRatio)));
+    % load constant
+    T_window = NameValueArgs.T_window;
+    overlap = NameValueArgs.overlap;
+    % plot setting
+    window = round(T_window*samplingFrequency); % time window [s]
+    noverlap = round(window*overlap); % overlap point number
+    f = NameValueArgs.f;
+
+
+    % plot for all dofs
     for iDof = 1:1:dofNum
-        signal = q(iDof,tStartIndex:tEndIndex);
+        % define data here
+        data = q(iDof, tStartIndex:tEndIndex)';
         
-        % divide signal into pieces
-        signalPieces  = zeros(intervalNum,intervalLength);
-        tPieces       = zeros(intervalNum,intervalLength);
-        startIndex  = 1;
-        for iInterval=1:1:intervalNum
-            tPieces(iInterval,:) = tUse(startIndex:startIndex+intervalLength-1);
-            signalPieces(iInterval,:) = signal(startIndex:startIndex+intervalLength-1);
-            startIndex = floor(startIndex+intervalLength*(1-superpositionRatio));%update locs
-        end  
-        % fft
-        saveF  = zeros(intervalNum, intervalLength/2+1);
-        saveP1 = zeros(intervalNum, intervalLength/2+1);
-        saveT  = zeros(intervalNum, intervalLength/2+1);
-        for iInterval = 1:1:intervalNum
-            iSignalPiece = signalPieces(iInterval,:);
-            iTPiece = tPieces(iInterval,:);
-            signallength = size(tPieces,2);
-            Y  = fft(iSignalPiece);%FFT to displacement
-            P2 = abs(Y/signallength);%two-sided spectrum
-            P1 = P2(1:signallength/2+1);
-            P1(2:end-1) = 2*P1(2:end-1);%one-sided spectrum
-            f  = samplingFrequency/NameValueArgs.reduceInterval...
-                *(0:(signallength/2))/signallength;%frequency domain
-            saveF(iInterval,:) = f;
-            saveP1(iInterval,:) = P1;
-            saveT(iInterval,:) = (max(iTPiece)+min(iTPiece))/2;
-        end
-        % plot
-        h=figure('Visible', 'on');
+        % create figre
+        h = figure('Visible', 'off');
+        
         if NameValueArgs.fftisPlot3DTransient
-            for iInterval = 1:1:intervalNum
-                plot3(saveF(iInterval,:),saveT(iInterval,:),saveP1(iInterval,:),'k'); hold on
-                %stem3(saveF(iInterval,:),saveT(iInterval,:),saveP1(iInterval,:),'color', 'k', 'Marker', 'none'); hold on
-            end % end for
-            view([-7.52762430939227 62.6971962616822]);
+            % plot 3d fft [Hz]
+            [s_fft3d, f_fft3d, t_fft3d] = spectrogram(data ,window, noverlap, f, samplingFrequency);
+            waterfall(f_fft3d(5:end), t_fft3d+tSpan(1), abs(s_fft3d(5:end,:))'.^2)
+
+            set(gca, ...
+                    'Box'         , 'on'                        , ...
+                    'TickDir'     , 'in'                        , ...
+                    'XMinorTick'  , 'off'                       , ...
+                    'YMinorTick'  , 'off'                       , ...
+                    'TickLength'  , [.01 .01]                   , ...
+                    'LineWidth'   , 0.5                         , ...
+                    'XGrid'       , 'off'                       , ...
+                    'YGrid'       , 'off'                       , ...
+                    'FontSize'    , 7                           , ... 
+                    'FontName'    ,'Times New Roman'            ,...
+                    'layer'       , 'top'                       , ...
+                    'LooseInset'  , [0,0,0,0]) 
+                
+            xlabelname = '$f$ (Hz)';
+            ylabelname = '$t$ (s)';
+            zlabelname = '$dB/Hz$';
+            xlabel(xlabelname, 'FontName', 'Times New Roman', 'Interpreter','latex', 'FontSize',9);
+            ylabel(ylabelname, 'FontName', 'Times New Roman', 'Interpreter','latex', 'FontSize',9);
+            zlabel(zlabelname, 'FontName', 'Times New Roman', 'Interpreter','latex', 'FontSize',9);
+            xlim([0 NameValueArgs.fftXlim])
+            if NameValueArgs.isPlotInA4
+                set(gcf,'Units','centimeters','Position',[6 6 7.2 4]);%Set the size of figure(for A4)
+            else
+                set(gcf,'Units','centimeters','Position',[6 6 10 5]);%Set the size of figure(for viewing)
+            end
+            view(30, 30)
         else
-            %construct my color
-            mycolorpoint=[[0 0 16];...
-                [8 69 99];...
-                [57 174 156];...
-                [198 243 99];...
-                [222 251 123];...
-                [239 255 190]];
-            mycolorposition=[1 11 33 50 57 64];
-            mycolormap_r=interp1(mycolorposition,mycolorpoint(:,1),1:64,'linear','extrap');
-            mycolormap_g=interp1(mycolorposition,mycolorpoint(:,2),1:64,'linear','extrap');
-            mycolormap_b=interp1(mycolorposition,mycolorpoint(:,3),1:64,'linear','extrap');
-            mycolor=[mycolormap_r',mycolormap_g',mycolormap_b']/255;
-            mycolor=round(mycolor*10^4)/10^4;%保留4位小数
-            % plot
-            h1 = pcolor(saveF,saveT,saveP1);
-            shading flat
-            colormap(turbo); % mycolor or jet
-             h1.EdgeColor='none';
-             h1.FaceColor='interp';
-%             view([0,90])
-            
-        end % end if 
+            % plot 2d fft [Hz]
+            spectrogram(data ,window, noverlap, f, samplingFrequency, 'yaxis');        
+            h = change2dTransientFormat(h, NameValueArgs.fftXlim);
+        end % end if
         figureName=['FFT ',figureIdentity{iDof}];
-        xlabelname = 'Frequency (Hz)';
-        ylabelname = 'Time (s)';
-        zlabelname = '$|$P1$|$';
-        xlabel(xlabelname, 'Interpreter','latex', 'Fontname', 'Times New Roman','FontSize',10);
-        ylabel(ylabelname, 'Interpreter','latex', 'Fontname', 'Times New Roman','FontSize',10);
-        zlabel(zlabelname, 'Interpreter','latex', 'Fontname', 'Times New Roman','FontSize',10);
-        xlim([0 NameValueArgs.fftXlim])
-        %title(figureName,'Fontname', 'Arial');
-        % change size
-        h = change2dTransientFormat(h, NameValueArgs.fftXlim);
-        % colorbar the order of these code can't move
-        c = colorbar;
-        ax = gca;
-        prePosition = ax.Position;
-        c.Position=[c.Position(1),c.Position(2),c.Position(3)*0.4,c.Position(4)];
-        ax.Position = prePosition;
+        title(figureName,'Fontname', 'Arial');
+
         % save figure
         figurePath = ['signalProcess/fftTransient/',figureIdentity{iDof}];
         isVisible = true;
         saveFigure(h, figurePath, SwitchFigure.saveFig, isVisible, SwitchFigure.saveEps);
         close
+
     end % end for iDof
+   
 end % end if
 
 %% Part VI: Poincare surface of section
@@ -366,40 +365,24 @@ end % end if
 if SwitchFigure.poincare
     
     refreshDirectory('signalProcess/poincare')
-    
-    
+
+    shaftNum = Parameter.Shaft.amount;
+    % get revolution start point
+    tk = get_tk_from_simulation2(Parameter.Status, t(tStartIndex:tEndIndex), shaftNum);
+
+
     %Initialize to save data
-    saveDisplacement = cell(dofNum,1); 
-    saveSpeed = cell(dofNum,1); 
-    
-    
+    saveDisplacement = cell(shaftNum,1); 
+    saveSpeed = cell(shaftNum,1);
+
+
     % calculate poincare point
-    domega = Parameter.Status.vmax * [1; abs(Parameter.Status.ratio)]';
-    Node = Parameter.Mesh.Node;
-    dofOnShaftNo = [Node(dofOnNodeNo).onShaftNo];
-    speed = 0;
-    for iDof = 1:1:dofNum
-        % check the speed
-        if speed ~= domega(dofOnShaftNo(iDof))
-            speed = domega(dofOnShaftNo(iDof));
-            tCutPeriod = (2*pi)/speed;
-            tCutPeriodIndex = floor(tCutPeriod*samplingFrequency/NameValueArgs.reduceInterval);
-            tCutLoopNum = floor( (timeEnd-timeStart)/tCutPeriod )-1;
-            tCutStartpoint = timeStart; % the start time for cutting signal (s) 
-            tCutStartpointIndex = find(( (tCutStartpoint)<=t & t<(tCutStartpoint+0.0005) ),1); % find the index of time near the cut point
-            [~, temporary] = max(  q(:,tCutStartpointIndex:(tCutStartpointIndex+tCutPeriodIndex)),[], 2 ); % find the maximum value near the start point
-            temporary = temporary + tCutStartpointIndex - 1;
-            tCutStartpointIndex = temporary; % the index of cuting time for each row
-            tCutStartpoint = t(tCutStartpointIndex)'; % cut time for each row(displacement)
-        end
-        saveDisplacement{iDof} = zeros(tCutLoopNum,1); 
-        saveSpeed{iDof} = zeros(tCutLoopNum,1); 
-        for iLoop = 1:1:tCutLoopNum
-            indexThisLoop = find((tCutStartpoint(iDof)+(iLoop-1)*tCutPeriod)<=t , 1);
-            saveDisplacement{iDof}(iLoop) =  q(iDof,indexThisLoop);%t_cut_loop*dof
-            saveSpeed{iDof}(iLoop) =  dq(iDof,indexThisLoop);%t_cut_loop*dof
-        end % end for iLoop
-    end % end for iDof
+    for iSection = 1:1:shaftNum
+        q_section = interp1(t, q', tk{iSection});
+        dq_section = interp1(t, dq', tk{iSection});
+        saveDisplacement{iSection} = q_section';
+        saveSpeed{iSection} = dq_section';
+    end % end for iSection
     
     
     % plot
@@ -423,7 +406,10 @@ if SwitchFigure.poincare
         end
         
         h=figure('Visible', 'off');
-        plot(xspan{iDof},yspan{iDof},'.','color',[0 0.30078125 0.62890625]);%plot
+        for iSection = 1:1:shaftNum
+            plot(xspan{iSection}(iDof,:),yspan{iSection}(iDof,:),'.'); hold on%plot
+        end
+        hold off
         xMin = min(q(iDof,tStartIndex:tEndIndex))-0.15*abs(min(q(iDof,tStartIndex:tEndIndex))-max(q(iDof,tStartIndex:tEndIndex)));
         xMax = max(q(iDof,tStartIndex:tEndIndex))+0.15*abs(min(q(iDof,tStartIndex:tEndIndex))-max(q(iDof,tStartIndex:tEndIndex)));
         yMin = min(dq(iDof,tStartIndex:tEndIndex))-0.15*abs(min(dq(iDof,tStartIndex:tEndIndex))-max(dq(iDof,tStartIndex:tEndIndex)));
@@ -434,7 +420,7 @@ if SwitchFigure.poincare
         isOnlySet = true;
         [~] = plot2DStandard([], [], xlabelname, ylabelname, isUsedInA4, isOnlySet);
         set(gcf,'Units','centimeters','Position',[6 6 7.2 4]);%Set the size of figure(for A4)
-        %title(figureName,'Fontname', 'Arial');
+        title(figureName,'Fontname', 'Arial');
         % save figure
         figurePath = ['signalProcess/poincare/',figureIdentity{iDof}];
         isVisible = true;
@@ -497,6 +483,7 @@ if SwitchFigure.axisTrajectory3d
             'YGrid'       , 'on'                        , ...
             'FontSize'    , 7                          , ... 
             'FontName'    ,'Times New Roman'            ) 
+        title(figureName,'Fontname', 'Arial');
         legend off
         figurePath = ['signalProcess/axisTrajectory3d/',['Shaft-',num2str(iShaft)]];
         isVisible = true;
@@ -506,6 +493,85 @@ if SwitchFigure.axisTrajectory3d
         nodeStart = nodeEnd + 1;
     end
 end
+
+
+%% Part VIII: Poincare Section with Phase
+if SwitchFigure.poincare_phase
+    refreshDirectory('signalProcess/poincare_phase')
+
+    shaftNum = Parameter.Shaft.amount;
+    % get revolution start point
+    tk = get_tk_from_simulation2(Parameter.Status, t(tStartIndex:tEndIndex), shaftNum);
+
+
+    %Initialize to save data
+    saveDisplacement = cell(shaftNum,1); 
+    saveSpeed = cell(shaftNum,1);
+
+
+    % calculate poincare point
+    for iSection = 1:1:shaftNum
+        q_section = interp1(t, q', tk{iSection});
+        dq_section = interp1(t, dq', tk{iSection});
+        saveDisplacement{iSection} = q_section';
+        saveSpeed{iSection} = dq_section';
+    end % end for iSection
+    
+    
+    % plot
+    xspan=saveDisplacement; % cell data
+    yspan=saveSpeed;
+    xspan2 = q(:,tStartIndex:tEndIndex);%Extract the x
+    yspan2 = dq(:,tStartIndex:tEndIndex);%Extract the y
+    for iDof=1:1:dofNum
+
+        figureName = ['Poincare ',figureIdentity{iDof}];
+        
+        isBearing = Node(dofOnNodeNo(iDof)).isBearing;
+        isTranslation = rem(iDof, 4)==1 || rem(iDof, 4)==2;
+        if isBearing
+            ylabelname = '$\dot{q}$ (m/s)';
+            xlabelname = '$q$ (m)';
+        elseif isTranslation
+            ylabelname = '$\dot{q}$ (m/s)';
+            xlabelname = '$q$ (m)';
+        else
+            ylabelname = '$\dot{q}$ (rad/s)';
+            xlabelname = '$q$ (rad)';
+        end
+        
+        legends = cell(shaftNum+1,1);
+        legends{1} = 'Phase';
+
+        h=figure('Visible', 'off');
+        % plot phase
+        plot(xspan2(iDof,:),yspan2(iDof,:)); hold on
+        % plot poincare section
+        for iSection = 1:1:shaftNum
+            plot(xspan{iSection}(iDof,:),yspan{iSection}(iDof,:),'.'); hold on%plot
+            legends{iSection+1} = ['Section ', num2str(iSection)];
+        end
+        hold off
+        xMin = min(q(iDof,tStartIndex:tEndIndex))-0.15*abs(min(q(iDof,tStartIndex:tEndIndex))-max(q(iDof,tStartIndex:tEndIndex)));
+        xMax = max(q(iDof,tStartIndex:tEndIndex))+0.15*abs(min(q(iDof,tStartIndex:tEndIndex))-max(q(iDof,tStartIndex:tEndIndex)));
+        yMin = min(dq(iDof,tStartIndex:tEndIndex))-0.15*abs(min(dq(iDof,tStartIndex:tEndIndex))-max(dq(iDof,tStartIndex:tEndIndex)));
+        yMax = max(dq(iDof,tStartIndex:tEndIndex))+0.15*abs(min(dq(iDof,tStartIndex:tEndIndex))-max(dq(iDof,tStartIndex:tEndIndex)));
+        xlim([xMin xMax]);
+        ylim([yMin yMax]);
+        isUsedInA4 = NameValueArgs.isPlotInA4;
+        isOnlySet = true;
+        [~] = plot2DStandard([], [], xlabelname, ylabelname, isUsedInA4, isOnlySet);
+        set(gcf,'Units','centimeters','Position',[6 6 7.2 4]);%Set the size of figure(for A4)
+        title(figureName,'Fontname', 'Arial');
+        legend(legends, 'Location', 'northeastoutside');
+        % save figure
+        figurePath = ['signalProcess/poincare_phase/',figureIdentity{iDof}];
+        isVisible = true;
+        saveFigure(h, figurePath, SwitchFigure.saveFig, isVisible, SwitchFigure.saveEps);
+        close
+    end % end for iDof (plot)
+
+end % end if SwitchFigure.poincare_phase
 
 %% 
 
