@@ -70,7 +70,7 @@ thickness = ADisk.thickness;
 rho = ADisk.density;
 eDisk = ADisk.eccentricity;
 m = (r2^2 - r1^2) * pi* thickness * rho;
-Id = 1/4 * m * (r1^2+r2^2);
+Id = 1/12 * m * (3*(r1^2+r2^2)+thickness^2);
 Ip = 1/2 * m * (r1^2+r2^2);
 
 %%
