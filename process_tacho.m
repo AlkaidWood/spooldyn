@@ -4,7 +4,7 @@
 %   This function processes a raw tacho signal to extract the start time of each 
 %   pulse and calculate the rotational speed in both RPM (revolutions per minute) 
 %   and rad/s (radians per second). It also provides several optional processing 
-%   steps such as deleting low - speed points, smoothing the speed curve, smoothing 
+%   steps such as deleting low-speed points, smoothing the speed curve, smoothing 
 %   the tacho signal, and plotting the speed curve.
 %
 % Inputs:
@@ -12,25 +12,28 @@
 %       The raw tacho signal, which is a vector representing the tacho sensor 
 %       output over time.
 %   - sampling_frequency: 
-%       The sampling frequency of the tacho signal. It is used to generate the 
-%       time series corresponding to the tacho signal.
+%       The sampling frequency of the tacho signal.
+%   - time:
+%       Time signal vector corresponding to the tacho signal, must have the same
+%       length as tacho signal. If set to 0 (default), the function will generate
+%       a time series based on sampling_frequency.
 %
 % Optional Inputs:
 %   - NameValue: 
-%       A structure with the following name - value pairs:
+%       A structure with the following name-value pairs:
 %       - is_delete_low_speed_points: 
 %           Default value is false. If set to true, the function will delete all 
-%           points where the speed is less than the specified low - speed threshold.
+%           consecutive low-speed points at both ends of the signal.
 %       - low_speed_threshold: 
 %           Default value is 2*pi. This parameter is used when is_delete_low_speed_points 
 %           is set to true. It defines the speed threshold below which points are deleted.
 %           The unit is rad/s
 %       - is_smooth_speed: 
 %           Default value is false. If set to true, the function will smooth the 
-%           speed curve using the Savitzky - Golay filter.
+%           speed curve using the Savitzky-Golay filter.
 %       - is_smooth_tacho: 
 %           Default value is false. If set to true, the speed will be smoothed first, 
-%           and then the start time of each pulse will be smoothed based on the 
+%           and then the start time of each pulse will be recalculated based on the 
 %           smoothed speed.
 %       - is_plot_speed: 
 %           Default value is false. If set to true, the function will generate a 
@@ -50,23 +53,25 @@
 %           speed in RPM, and varargout{3} is the rotational speed in rad/s.
 %
 % Example:
-%   % Get only the start time of each pulse
+%   % Get only the start time of each pulse with generated time signal
 %   tk = process_tacho(tacho, sampling_frequency);
-%   % Get the start time of each pulse and the speed in RPM
-%   [tk, omega_rpm] = process_tacho(tacho, sampling_frequency, ...
+%   % Get start time and speed in RPM with custom time signal
+%   [tk, omega_rpm] = process_tacho(tacho, sampling_frequency, time, ...
 %       'is_delete_low_speed_points', true, 'low_speed_threshold', 0.5);
-%   % Get all outputs and plot the speed curve
-%   [tk, omega_rpm, omega_rad] = process_tacho(tacho, sampling_frequency, ...
+%   % Get all outputs and plot speed curve
+%   [tk, omega_rpm, omega_rad] = process_tacho(tacho, sampling_frequency, time, ...
 %       'is_smooth_speed', true, 'is_plot_speed', true);
 %
 % Notes:
-%   - The function just delete the start or end part of signal which are
-%     below the threashold if is_delete_low_speed_points = true.
+%   - When is_delete_low_speed_points=true, the function deletes consecutive low-speed points
+%     at both ends of the signal. Specifically, it removes all low-speed points from the beginning
+%     until encountering the first point with speed above threshold, and similarly removes
+%     all low-speed points from the end backward until the last point with speed above threshold.
 %   - The function uses linear interpolation to find the exact time when the tacho 
 %     signal crosses a threshold.
-%   - The Savitzky - Golay filter is used for smoothing the speed curve, with a 
-%     window size of 20.
-%   - The low - speed point deletion is based on the time difference between consecutive 
+%   - Speed smoothing (when enabled) uses two successive applications of Savitzky-Golay filter
+%     with window size 20 for enhanced smoothing effect.
+%   - The low-speed point deletion is based on the time difference between consecutive 
 %     start times of pulses.
 %--------------------------------------------------------------------------
 
