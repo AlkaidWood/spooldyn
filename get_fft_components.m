@@ -26,9 +26,10 @@
 %       set components_index to [1 3 6 10].
 %   - NameValue: 
 %       A structure with the following name - value pairs:
-%       - is_output_angular: 
-%           Default value is true. If true, the output x - axis will be in 
-%           angular speed (rpm). If false, it will be in the time domain.
+%       - output_type: 
+%           Default value is 'time'. It specifies the output type. 
+%           Valid values are 'time' (output in the time domain), 
+%           'rpm' (output in angular speed (rpm)), and 'rev' (output with respect to the number of revolutions).
 %       - is_plot_result: 
 %           Default value is false. If set to true, n figures will be generated, 
 %           where n is the number of input signals. These figures show the 
@@ -48,18 +49,20 @@
 %       if time_signal is a 10000x4 matrix and components_index = [1 3 6 10 11 13], 
 %       a = 10000, b = 6.
 %   - x_axis: 
-%       A vector corresponding to each element in X. If is_output_angular is true, 
-%       it represents the angular speed in rpm. If false, it represents the time series.
+%       A vector corresponding to each element in X. Depending on the 'output_type':
+%       - If 'output_type' is 'time', it represents the time series.
+%       - If 'output_type' is 'rpm', it represents the angular speed in rpm.
+%       - If 'output_type' is 'rev', it represents the number of revolutions.
 %
 % Example:
 %   [X, x_axis] = get_fft_components(time_signal, time, tk, [1 3 6], ...
-%       'is_output_angular', false, 'is_plot_result', true, 'base_frequency_denominator', 2);
+%       'output_type', 'rpm', 'is_plot_result', true, 'base_frequency_denominator', 2);
 %
 % Notes:
 %   - This function assumes that the input signals are properly sampled and 
 %     the time series is consistent with the signal data.
 %   - The function uses interpolation to map the results from the angular 
-%     domain to the time domain when is_output_angular is false.
+%     domain to the time domain when 'output_type' is 'time'.
 %--------------------------------------------------------------------------
 
 function [X, x_axis] = get_fft_components(time_signal, time, tk, components_index, NameValue)
@@ -69,11 +72,11 @@ arguments
     time
     tk
     components_index = 1
-    NameValue.is_output_angular = true
+    NameValue.output_type = 'time'
     NameValue.is_plot_result = false
     NameValue.base_frequency_denominator = 1
 end
-is_output_angular = NameValue.is_output_angular;
+output_type = NameValue.output_type;
 is_plot_result = NameValue.is_plot_result;
 base_fre = NameValue.base_frequency_denominator;
 
@@ -117,33 +120,53 @@ for iRev = 1 : base_fre : rev_num-(base_fre-1)
     index = index + 1;
 end
 
-if is_output_angular
-    % calculate speed (for angular domain)
-    deltat = gradient(tk);
-    omega_rad = 2*pi ./ deltat;
-    reshaped_omega_rad = reshape(omega_rad(1:end-rem(rev_num, base_fre)-1), base_fre, []);
-    group_means = mean(reshaped_omega_rad,1);
-    omega_rad = group_means;
-    omega_rpm = omega_rad/(2*pi)*60;
-    x_axis = omega_rpm;
-else
-    %calculate time series (for time domain)
-    new_tk = tk(1:base_fre:rev_num+1);
-    new_time = (new_tk(1:end-1) + new_tk(2:end))./2;
-    x_axis = time;
-    % initial output in time domain
-    X_time = cell(signal_num, 1); % save the fft components
-    for iSignal = 1:1:signal_num
-        X_tisme{iSignal} = zeros(outputs_num,length(time));
-    end
-    % map the X from angular domain to time domain
-    for iSignal = 1:1:signal_num
-        for iComponent = 1:1:outputs_num
-            X_time{iSignal}(iComponent,:) = interp1(new_time, X{iSignal}(iComponent,:), time, 'pchip');
+
+% output
+switch output_type
+    case 'time'
+        %calculate time series (for time domain)
+        new_tk = tk(1:base_fre:rev_num+1);
+        new_tk = (new_tk(1:end-1) + new_tk(2:end))./2;
+        % Find the index of the value in 'time' that is closest to and greater than or equal to tk(1)
+        index1 = find(time >= new_tk(1), 1, 'first');
+        % Find the index of the value in 'time' that is closest to and less than or equal to tk(end)
+        index2 = find(time <= new_tk(end), 1, 'last');
+        % Keep only the data between the two closest values and store it in 'time_new'
+        if ~isempty(index1) && ~isempty(index2)
+            time_new = time(index1:index2);
+        else
+            time_new = [];
         end
-    end
-    % output
-    X = X_time; 
+        % output
+        x_axis = time_new;
+        % initial output in time domain
+        X_time = cell(signal_num, 1); % save the fft components
+        for iSignal = 1:1:signal_num
+            X_time{iSignal} = zeros(outputs_num,length(time_new));
+        end
+        % map the X from angular domain to time domain
+        for iSignal = 1:1:signal_num
+            for iComponent = 1:1:outputs_num
+                X_time{iSignal}(iComponent,:) = interp1(new_tk, X{iSignal}(iComponent,:), time_new, 'pchip');
+            end
+        end
+        % output
+        X = X_time;
+    case 'rpm'
+        % calculate speed (for angular domain)
+        deltat = gradient(tk);
+        omega_rad = 2*pi ./ deltat;
+        reshaped_omega_rad = reshape(omega_rad(1:end-rem(rev_num, base_fre)-1), base_fre, []);
+        group_means = mean(reshaped_omega_rad,1);
+        omega_rad = group_means;
+        omega_rpm = omega_rad/(2*pi)*60;
+        x_axis = omega_rpm;
+    case 'rev'
+        % output result respect to revolution circle
+        rev = 1 : base_fre : rev_num-(base_fre-1);
+        x_axis = rev;
+    otherwise
+        error('output_type should be one of time, rpm, rev.')
 end
 
 % plot result (optional)
@@ -164,18 +187,20 @@ if is_plot_result
         title_str = ['FFT for each revolution for ',num2str(iSignal),'-th signal'];
         figure('Name', title_str)
         for iComponent = 1:1:outputs_num
-            if is_output_angular
-                plot(omega_rpm(1:end), abs(X{iSignal}(iComponent,:))); hold on
-            else
-                plot(time(1:end), abs(X{iSignal}(iComponent,:))); hold on
-            end % end if
+            plot(x_axis(1:end), abs(X{iSignal}(iComponent,:))); hold on          
         end % end for iComponent
         hold off
-        if is_output_angular
-            xlabel('\Omega (rpm)')
-        else
-            xlabel('t (s)')
-        end
+
+        %
+        switch output_type
+            case 'time'
+                xlabel('Time (s)')
+            case 'rpm'
+                xlabel('RPM')
+            case 'rev'
+                xlabel('Number of Revolution')
+        end % end switch
+
         ylabel('(m)')
         title(title_str)
         grid on

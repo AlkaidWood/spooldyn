@@ -170,18 +170,20 @@ if NameValue.is_plot_result
         subplot(1,2,1)
         spectrogram(raw_data(plot_index(iFigure),:),window,noverlap,nfft,sampling_frequency,'yaxis');
         ylabel('Frequency (Hz)')
+        xlabel('Time (s)')
         c = colorbar;
         c.Label.String = 'dB/Hz';
         grid on
-        colormap jet
+        colormap(cool)
         % plot 3d fft after noisy reduction
         subplot(1,2,2)
         spectrogram(data(plot_index(iFigure),:),window,noverlap,nfft,sampling_frequency,'yaxis');
         ylabel('Frequency (Hz)')
+        xlabel('Time (s)')
         c = colorbar;
         c.Label.String = 'dB/Hz';
         grid on
-        colormap jet
+        colormap(turbo)
         set(gcf,'Position',[200, 200, 1500, 400])
     end % end for
 end % end if is plot

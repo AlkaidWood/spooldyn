@@ -22,8 +22,9 @@
 %           Default value is false. If set to true, the function will delete all 
 %           points where the speed is less than the specified low - speed threshold.
 %       - low_speed_threshold: 
-%           Default value is 1. This parameter is used when is_delete_low_speed_points 
+%           Default value is 2*pi. This parameter is used when is_delete_low_speed_points 
 %           is set to true. It defines the speed threshold below which points are deleted.
+%           The unit is rad/s
 %       - is_smooth_speed: 
 %           Default value is false. If set to true, the function will smooth the 
 %           speed curve using the Savitzky - Golay filter.
@@ -59,6 +60,8 @@
 %       'is_smooth_speed', true, 'is_plot_speed', true);
 %
 % Notes:
+%   - The function just delete the start or end part of signal which are
+%     below the threashold if is_delete_low_speed_points = true.
 %   - The function uses linear interpolation to find the exact time when the tacho 
 %     signal crosses a threshold.
 %   - The Savitzky - Golay filter is used for smoothing the speed curve, with a 
@@ -67,13 +70,14 @@
 %     start times of pulses.
 %--------------------------------------------------------------------------
 
-function [varargout] = process_tacho(tacho, sampling_frequency, NameValue)
+function [varargout] = process_tacho(tacho, sampling_frequency, time, NameValue)
 
 arguments
     tacho 
     sampling_frequency
+    time = 0
     NameValue.is_delete_low_speed_points = false
-    NameValue.low_speed_threshold = 1
+    NameValue.low_speed_threshold = 2*pi
     NameValue.is_smooth_speed = false
     NameValue.is_smooth_tacho = false
     NameValue.is_plot_speed = false
@@ -99,8 +103,16 @@ index1 = index1(index1~=0);
 index2 = index2(index2~=0);
 
 % generate time
-timeEnd = pointNum/sampling_frequency;
-t = linspace(0,timeEnd, pointNum)'; % generate time series
+if time==0
+    timeEnd = pointNum/sampling_frequency;
+    t = linspace(0,timeEnd, pointNum)'; % generate time series
+else
+    % check the length of time signal
+    if length(time)~=length(tacho)
+        error('Please input the time signal which has the same length with tacho signal.')
+    end
+    t = time;
+end
 
 % interpolation
 tk = zeros(1,length(index1)); % this point represents the start point of new revolution
@@ -112,28 +124,49 @@ end % end for
 
 % delete low speed point (optional)
 if NameValue.is_delete_low_speed_points
-    indexDel = zeros(length(tk),1);
-    for i = 1:1:length(tk)-1
-        if tk(i+1)-tk(i) > 1
-            indexDel(i) = i;
-            indexDel(i+1) = i+1;
-        end % end if
-    end % end for
-    indexDel(indexDel==0) = [];
+    % Pre - allocate arrays to store the indices to be deleted at the start and end
+    % Assume the maximum number of elements to be deleted is the length of tk
+    indexDelStart = false(length(tk), 1); 
+    indexDelEnd = false(length(tk), 1);
+    
+    % Check the low - speed region from the beginning of the sequence
+    for i = 1:length(tk)-1
+        if 2*pi/(tk(i + 1)-tk(i)) < NameValue.low_speed_threshold
+            indexDelStart(i) = true;
+            indexDelStart(i + 1) = true;
+        else
+            % Once a non - low - speed region is encountered, stop checking
+            break;
+        end
+    end
+    
+    % Check the low - speed region from the end of the sequence
+    for i = length(tk):-1:2
+        if 2*pi/(tk(i)-tk(i - 1)) < NameValue.low_speed_threshold
+            indexDelEnd(i - 1) = true;
+            indexDelEnd(i) = true;
+        else
+            % Once a non - low - speed region is encountered, stop checking
+            break;
+        end
+    end
+    
+    % Combine the deletion indices from the start and end
+    indexDel = indexDelStart | indexDelEnd;
+    
+    % Delete the corresponding time points
     tk(indexDel) = [];
-end % end if
+end
 
 % calculate speed curve (optional)
-if nargout > 1
-    deltat = gradient(tk);
-    omega_rad = 2*pi ./ deltat;
-    omega_rpm = omega_rad/(2*pi)*60;
-    omega_rpm_origin = omega_rpm; % for ploting speed curve
-end
+deltat = gradient(tk);
+omega_rad = 2*pi ./ deltat;
+omega_rpm = omega_rad/(2*pi)*60;
+omega_rpm_origin = omega_rpm; % for ploting speed curve
 
 
 % smooth the speed curve (optional)
-if (nargout>1 && NameValue.is_smooth_speed) || NameValue.is_smooth_tacho
+if NameValue.is_smooth_speed || NameValue.is_smooth_tacho
     % smooth
     omega_rad_smooth = smoothdata(omega_rad, 'sgolay', 20);
     omega_rad_smooth2 = smoothdata(omega_rad_smooth, 'sgolay', 20);
@@ -155,11 +188,11 @@ end
 if NameValue.is_plot_speed
     h = figure('Name','Speed Curve from Tacho Signal');
     if NameValue.is_smooth_speed || NameValue.is_smooth_tacho
-        plot(tk, omega_rpm_origin, 'o'); hold on
+        plot(tk, omega_rpm_origin); hold on
         plot(tk, omega_rpm, 'r');
         legend('origin data', 'after smooth')
     else
-        plot(tk, omega_rpm, 'o');
+        plot(tk, omega_rpm);
     end % end if smooth
     xlabel('Time (s)')
     ylabel('RPM')
