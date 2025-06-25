@@ -168,6 +168,9 @@ end
 M = sparse(M);
 K = sparse(K);
 C = sparse(C);
+G = sparse(G);
+N = sparse(N);
+Q = sparse(Q);
 
 
 % generate the struct Matrix
