@@ -148,7 +148,13 @@ for iShaft = 1:1:Shaft.amount
                          + offsetPosition(iShaft);
             position = [positionX, 0, 0]; % [x, y, z]
             radius = Shaft.outerRadius(iShaft);
-            height = max(Disk.outerRadius) * 1.25;
+            height_with_disk = max(Disk.outerRadius) * 1.25;
+            height_with_shaft = max(Shaft.outerRadius) * 2.5;
+            if height_with_disk >= height_with_shaft
+                height = height_with_disk;
+            else
+                height = height_with_shaft;
+            end % end if
             width = height;
             thickness = min(Disk.thickness) * 0.6;
             NODES = 15;

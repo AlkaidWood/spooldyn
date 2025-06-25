@@ -92,8 +92,11 @@ Bearing.inShaftNo       = [];
 Bearing.dofOfEachNodes  = []; % if mass=0, dof must be 0 
 Bearing.positionOnShaftDistance = [];
 Bearing.stiffness       = []; % N*m
+Bearing.stiffnessVertical = []; % N*m
 Bearing.damping         = []; % N*s/m
+Bearing.dampingVertical = []; % N*s/m
 Bearing.mass            = []; % kg
+Bearing.isHertzian      = zeros(Bearing.amount, 1); % should not be revised
 
 checkInputData(Bearing)
 
