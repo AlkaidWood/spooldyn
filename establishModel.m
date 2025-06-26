@@ -163,7 +163,6 @@ if InitialParameter.ComponentSwitch.hasLoosingBearing
     CLoosing = sparse(CLoosing);
 end
 
-
 % sparse format
 M = sparse(M);
 K = sparse(K);
@@ -183,6 +182,44 @@ Matrix.unblanceForce = Q; % n*1
 Matrix.gravity = Fg; % n*1
 Matrix.eccentricity = EDisk'; % 1*m, m is the number of disks
 
+
+% pre-calculate G matrix to save time if accerleartion=0
+if ~Parameter.Status.isUseCustomize
+    if (Parameter.Status.acceleration == 0) && (Parameter.Status.isDeceleration == false)
+        % initial
+        G_with_domega = zeros(size(G));
+        % calculate dof range of shafts
+        Node = Parameter.Mesh.Node;
+        dofInterval = Parameter.Mesh.dofInterval;
+        shaftNum = Parameter.Shaft.amount;
+        shaftDof = zeros(shaftNum,2);
+        for iShaft = 1:1:shaftNum
+            iShaftCell = repmat({iShaft}, 1, length(Node));
+            isShaftHere = cellfun(@ismember, iShaftCell, {Node.onShaftNo});
+            isBearingHere = [Node.isBearing] == false;
+            IShaftNode = Node( isShaftHere & isBearingHere );
+            startNode = min([IShaftNode.name]);
+            endNode = max([IShaftNode.name]);
+            shaftDof(iShaft,:) = [dofInterval(startNode,1), dofInterval(endNode,2)];
+        end
+        % generate G with speed
+        ratio = [1; Parameter.Status.ratio];
+        for iShaft=1:1:shaftNum
+            domega = Parameter.Status.vmax * ratio(iShaft);
+            G_wiht_domega(shaftDof(iShaft,1):shaftDof(iShaft,2)) ...
+                = domega * G(shaftDof(iShaft,1):shaftDof(iShaft,2));       
+        end
+        % sparse format
+        G_with_domega = sparse(G_with_domega);
+        % generate the struct Matrix
+        Matrix.gyroscopic_with_domega = G_with_domega; % n*n
+    elseif (Parameter.Status.acceleration == 0) && (Parameter.Status.isDeceleration == true)
+        error('when acceleration equal 0, isDeceleration must be false')
+    end % end if
+end % end if
+
+
+% for saving matrix of loosing bearings
 if InitialParameter.ComponentSwitch.hasLoosingBearing
     Matrix.stiffnessLoosing = KLoosing;
     Matrix.dampingLoosing = CLoosing;
