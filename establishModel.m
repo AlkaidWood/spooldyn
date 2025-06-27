@@ -206,8 +206,8 @@ if ~Parameter.Status.isUseCustomize
         ratio = [1; Parameter.Status.ratio];
         for iShaft=1:1:shaftNum
             domega = Parameter.Status.vmax * ratio(iShaft);
-            G_wiht_domega(shaftDof(iShaft,1):shaftDof(iShaft,2)) ...
-                = domega * G(shaftDof(iShaft,1):shaftDof(iShaft,2));       
+            G_with_domega(shaftDof(iShaft,1):shaftDof(iShaft,2), shaftDof(iShaft,1):shaftDof(iShaft,2)) ...
+                = domega * G(shaftDof(iShaft,1):shaftDof(iShaft,2), shaftDof(iShaft,1):shaftDof(iShaft,2));       
         end
         % sparse format
         G_with_domega = sparse(G_with_domega);
