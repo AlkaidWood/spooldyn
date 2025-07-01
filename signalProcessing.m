@@ -454,7 +454,7 @@ if SwitchFigure.axisTrajectory3d
     xspan = xspan(:,tStartIndex:tEndIndex);
     
     nodeStart = 1;
-    dis = Parameter.Mesh.keyPointsDistance;
+    dis = Parameter.Mesh.nodeDistance;
     for iShaft = 1:1:Parameter.Shaft.amount
         nodeEnd = nodeStart + length(dis{iShaft}) - 1;
         figureName = ['AxisTrajectory ','Shaft-',num2str(iShaft)];
