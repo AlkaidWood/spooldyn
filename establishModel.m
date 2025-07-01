@@ -21,6 +21,7 @@
 %       'low' (default) | 'middle' | 'high' | numeric vector
 %   isPlotModel  - Display system schematic diagram (default: true)
 %   isPlotMesh   - Visualize mesh discretization (default: true)
+%   matrix_value_tol - Delete the extremly small value in all matrix (default: 1e-12) 
 %
 % Output:
 %   Parameter - Enhanced system structure with FEM components:
@@ -69,6 +70,7 @@ arguments % name value pair
     NameValueArgs.isPlotModel = true;
     NameValueArgs.isPlotMesh = true;
     NameValueArgs.gridFineness = 'low';
+    NameValueArgs.matrix_value_tol = 1e-12;
 end
 
 %%
@@ -117,6 +119,7 @@ end
 %%
 
 % generate FEM matrices of intermediate bearing
+MInterBearing = zeros( length(MDisk) );
 KInterBearing = zeros( length(MDisk) );
 CInterBearing = zeros( length(MDisk) );
 FgInterBearing = zeros(length(MDisk), 1);
@@ -155,6 +158,13 @@ N = NShaft + NDisk;
 C = CShaft +         CBearing + CInterBearing;
 Q = QDisk;
 Fg = FgShaft + FgDisk + FgBearing + FgInterBearing;
+
+% delete small values in matrix
+M(abs(M) < NameValueArgs.matrix_value_tol) = 0;
+K(abs(K) < NameValueArgs.matrix_value_tol) = 0;
+G(abs(G) < NameValueArgs.matrix_value_tol) = 0;
+N(abs(N) < NameValueArgs.matrix_value_tol) = 0;
+C(abs(C) < NameValueArgs.matrix_value_tol) = 0;
 
 if InitialParameter.ComponentSwitch.hasLoosingBearing
     KLoosing = KShaft + KLBearing + KInterBearing;
