@@ -17,7 +17,7 @@
 %   NameValueArgs - Optional parameters:
 %       .isPlotStatus: logical       Plot rotational status (default: true)
 %       .reduceInterval: integer     Data downsampling factor (default: 1)
-%       .calculateMethod: char       Solver type: 'RK'/'ode45'/'ode15s' (default: 'RK')
+%       .calculateMethod: char       Solver type: 'RK'/'ode45'/'ode15s'/'ode23s' (default: 'RK')
 %       .options: struct             ODE solver options (ode45/ode15s only)
 %       .isUseBalanceAsInitial: logical Use balanced position as initial
 %       .isFreshInitial: logical      Force new balance calculation
@@ -144,6 +144,12 @@ elseif strcmp(NameValueArgs.calculateMethod, 'ode45') % use ode45 as solver
 elseif strcmp(NameValueArgs.calculateMethod, 'ode15s') % use ode15s as solver
     odefun = @(tn, yn) [yn(dofNum+1:end, 1); dynamicEquation(tn,yn(1:dofNum, 1), yn(dofNum+1:end, 1), Parameter)];
     [~, yode] = ode15s(odefun, t, [yn; dyn], NameValueArgs.options);
+    yode = yode';
+    q = yode(1:dofNum, :);
+    dq = yode(dofNum+1:end, :);
+elseif strcmp(NameValueArgs.calculateMethod, 'ode23s') % use ode23s as solver
+    odefun = @(tn, yn) [yn(dofNum+1:end, 1); dynamicEquation(tn,yn(1:dofNum, 1), yn(dofNum+1:end, 1), Parameter)];
+    [~, yode] = ode23s(odefun, t, [yn; dyn], NameValueArgs.options);
     yode = yode';
     q = yode(1:dofNum, :);
     dq = yode(dofNum+1:end, :);
