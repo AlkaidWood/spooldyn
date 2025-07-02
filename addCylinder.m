@@ -80,7 +80,12 @@ z = z + position(3);
 
 % plot
 %surf(x([1 2 2 1 1],:),[y;y*RATIO_INNER_OUTER;y(1,:)],[z;z*RATIO_INNER_OUTER;z(1,:)])
-surf(x,y,z)
+% define color
+C = zeros(size(z));
+C(:,:,1) = 160/255;
+C(:,:,2) = 175/255;
+C(:,:,3) = 190/255;
+surf(x,y,z, C, 'EdgeColor', 'none', 'FaceAlph', 0.7)
 hold on
 axis equal
 

@@ -106,12 +106,11 @@ else
 end
 
 %%
-%allFigure = cell(Shaft.amount,1);
 figureName = cell(Shaft.amount,1);
 
 
 for iShaft = 1:1:Shaft.amount
-    h = figure('visible','off');
+    h = figure('visible','on');
     
     
     % shaft
@@ -167,6 +166,10 @@ for iShaft = 1:1:Shaft.amount
         end % end if
     end % end for iBearing
     
+    % add light
+    light('Position', [-0.5272   -0.6871    0.5000], 'Color', [0.8 0.8 1]);
+    light('Position', [-0.5272   -0.6871    0.5000], 'Color', [1 0.9 0.8]);
+    lighting gouraud;
     
     % save figure for each shaft
     figureName{iShaft} = ['modelDiagram/diagramOfShaft',num2str(iShaft),'.fig'];

@@ -116,9 +116,18 @@ end
 %%
 
 % plot
-s(1)=surf(x,y,z); hold on
-s(2)=surf(xSide([1,2],:),ySide([1,2],:),zSide([1,2],:)); hold on
-s(3)=surf(xSide([3,4],:),ySide([3,4],:),zSide([3,4],:)); hold on
+% define color
+C = zeros(size(z));
+C(:,:,1) = 160/255;
+C(:,:,2) = 175/255;
+C(:,:,3) = 190/255;
+s(1)=surf(x,y,z, C, 'EdgeColor', 'none'); hold on
+C = zeros(size(zSide([1,2],:)));
+C(:,:,1) = 160/255;
+C(:,:,2) = 175/255;
+C(:,:,3) = 190/255;
+s(2)=surf(xSide([1,2],:),ySide([1,2],:),zSide([1,2],:), C, 'EdgeColor', 'none'); hold on
+s(3)=surf(xSide([3,4],:),ySide([3,4],:),zSide([3,4],:), C, 'EdgeColor', 'none'); hold on
 
 
 % rotate the plot

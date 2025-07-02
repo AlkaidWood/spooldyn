@@ -69,6 +69,11 @@ end
 %legend(ax,hS);
 legend off
 %savefig(hf,figname)          % 保存figure文件
+% 删除光源，仅保留前两个
+allLights = findobj(ax, 'Type', 'light');
+if length(allLights) > 1
+    delete(allLights(3:end)); % 保留前两个光源，删除其余
+end
 
 end
 
