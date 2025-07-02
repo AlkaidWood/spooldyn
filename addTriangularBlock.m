@@ -22,22 +22,22 @@
 % RotateInfo: is a struct with field isRotate(boolean), orgingin(3*1
 % vector), angle(scalar), dirction(3*1 vector)
 
-function addTriangularBlock(position,radius,height,width,thickness,NODE_IN_CIRCLE,axisName,RotateInfo)
+function addTriangularBlock(ax, position,radius,height,width,thickness,NODE_IN_CIRCLE,axisName,RotateInfo)
 
 % default value of NODE_IN_CIRCLE and axisName
-if nargin<8
+if nargin<9
     RotateInfo.isRotate = false;
 end
 
-if nargin<7
+if nargin<8
     axisName = 'x';
 end
 
-if nargin<6
+if nargin<7
     NODE_IN_CIRCLE = 10;
 end
 
-if nargin<5
+if nargin<6
     thickness = 1;
 end
 
@@ -121,13 +121,13 @@ C = zeros(size(z));
 C(:,:,1) = 160/255;
 C(:,:,2) = 175/255;
 C(:,:,3) = 190/255;
-s(1)=surf(x,y,z, C, 'EdgeColor', 'none'); hold on
+s(1)=surf(ax, x,y,z, C, 'EdgeColor', 'none'); hold on
 C = zeros(size(zSide([1,2],:)));
 C(:,:,1) = 160/255;
 C(:,:,2) = 175/255;
 C(:,:,3) = 190/255;
-s(2)=surf(xSide([1,2],:),ySide([1,2],:),zSide([1,2],:), C, 'EdgeColor', 'none'); hold on
-s(3)=surf(xSide([3,4],:),ySide([3,4],:),zSide([3,4],:), C, 'EdgeColor', 'none'); hold on
+s(2)=surf(ax, xSide([1,2],:),ySide([1,2],:),zSide([1,2],:), C, 'EdgeColor', 'none'); hold on
+s(3)=surf(ax, xSide([3,4],:),ySide([3,4],:),zSide([3,4],:), C, 'EdgeColor', 'none'); hold on
 
 
 % rotate the plot

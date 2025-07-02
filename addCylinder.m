@@ -21,14 +21,14 @@
 
 
 %%
-function addCylinder(position,outerRadius,innerRadius,length,NODE_IN_CIRCLE,axisName)
+function addCylinder(ax, position,outerRadius,innerRadius,length,NODE_IN_CIRCLE,axisName)
 
 % default value of NODE_IN_CIRCLE and axisName
-if nargin<6
+if nargin<7
     axisName = 'x';
 end
 
-if nargin<5
+if nargin<6
     NODE_IN_CIRCLE = 10;
 end
 
@@ -85,7 +85,7 @@ C = zeros(size(z));
 C(:,:,1) = 160/255;
 C(:,:,2) = 175/255;
 C(:,:,3) = 190/255;
-surf(x,y,z, C, 'EdgeColor', 'none', 'FaceAlph', 0.7)
+surf(ax, x, y, z, C, 'EdgeColor', 'none', 'FaceAlph', 0.7)
 hold on
 axis equal
 

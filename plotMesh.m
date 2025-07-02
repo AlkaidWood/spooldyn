@@ -264,11 +264,11 @@ for iShaft = 1:1:Shaft.amount
     
     
     % save figure
-    %set(gcf,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
+    set(gcf,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
     figureName2 = ['meshDiagram/MeshResultOfShaft', num2str(iShaft), '.fig'];
     savefig(h,figureName2)
     saveas(h, ['meshDiagram/MeshResultOfShaft', num2str(iShaft), '.png'])
-
+    close(h)
 end % end for iShaft
-close all
+
 end % end function

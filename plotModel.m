@@ -106,12 +106,19 @@ else
 end
 
 %%
+
+% Create persistent figure for final composite
+wholeFig = figure('Visible', 'off');
+wholeAxes = axes(wholeFig);
+hold(wholeAxes, 'on');
+
+% Process each shaft
 figureName = cell(Shaft.amount,1);
 
 
 for iShaft = 1:1:Shaft.amount
-    h = figure('visible','on');
-    
+    h = figure('visible','off');
+    ax_h = axes(h);
     
     % shaft
     positionX = Shaft.totalLength(iShaft)/2 + offsetPosition(iShaft);
@@ -121,7 +128,7 @@ for iShaft = 1:1:Shaft.amount
     length = Shaft.totalLength(iShaft);
     NODES = 20;
     axisName = 'x';
-    addCylinder(position, outerRadius, innerRadius, length, NODES, axisName);
+    addCylinder(ax_h, position, outerRadius, innerRadius, length, NODES, axisName);
     
     
     % disk
@@ -135,7 +142,7 @@ for iShaft = 1:1:Shaft.amount
             length = Disk.thickness(iDisk);
             NODES = 30;
             axisName = 'x';
-            addCylinder(position, outerRadius, innerRadius, length, NODES, axisName);
+            addCylinder(ax_h, position, outerRadius, innerRadius, length, NODES, axisName);
         end % end if
     end % end for iDsk
     
@@ -162,28 +169,52 @@ for iShaft = 1:1:Shaft.amount
             RotateInfo.oringin = [0,0,0];
             RotateInfo.direction = [1,0,0];
             RotateInfo.angle = 90;
-            addTriangularBlock(position,radius,height,width,thickness,NODES,axisName,RotateInfo);     
+            addTriangularBlock(ax_h, position,radius,height,width,thickness,NODES,axisName,RotateInfo);     
         end % end if
     end % end for iBearing
     
+    % Copy contents to composite figure
+    allObjs = findall(h, 'type','axes');
+    toCopy = allchild(allObjs);
+    % Copy objects to composite figure
+    copyobj(toCopy, wholeAxes);
+
     % add light
-    light('Position', [-0.5272   -0.6871    0.5000], 'Color', [0.8 0.8 1]);
-    light('Position', [-0.5272   -0.6871    0.5000], 'Color', [1 0.9 0.8]);
+    light(ax_h, 'Position', [-0.5272   -0.6871    0.5000], 'Color', [0.8 0.8 1]);
+    light(ax_h, 'Position', [-0.5272   -0.6871    0.5000], 'Color', [1 0.9 0.8]);
     lighting gouraud;
     
     % save figure for each shaft
+    set(h,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
     figureName{iShaft} = ['modelDiagram/diagramOfShaft',num2str(iShaft),'.fig'];
     savefig(h,figureName{iShaft})
     pngName = ['modelDiagram/diagramOfShaft',num2str(iShaft),'.png'];
-    saveas(h, pngName) 
+    saveas(h, pngName)
     close(h)
     
 end % end for iShaft
 
+% Set axis properties for full model
+view(wholeAxes, 3); % 3D view
+grid(wholeAxes, 'on');
+axis(wholeAxes, 'equal');
 
-% save the whole figure
-wholeFigure = CombFigs('theWholeModel',figureName(:));
-savefig(wholeFigure,'modelDiagram/theWholeModel.fig')
-saveas(wholeFigure,'modelDiagram/theWholeModel.png')
-close(wholeFigure)
+% add light for full model
+light(wholeAxes, 'Position', [-0.5272   -0.6871    0.5000], 'Color', [0.8 0.8 1]);
+light(wholeAxes, 'Position', [-0.5272   -0.6871    0.5000], 'Color', [1 0.9 0.8]);
+lighting gouraud;
+
+% Save composite figure
+set(wholeFig,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
+savefig(wholeFig, 'modelDiagram/theWholeModel.fig');
+saveas(wholeFig, 'modelDiagram/theWholeModel.png');
+
+% Close composite figure
+close(wholeFig);
+
+% % save the whole figure
+% wholeFigure = CombFigs('theWholeModel',figureName(:));
+% savefig(wholeFigure,'modelDiagram/theWholeModel.fig')
+% saveas(wholeFigure,'modelDiagram/theWholeModel.png')
+% close(wholeFigure)
 end
