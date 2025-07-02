@@ -418,8 +418,10 @@ isInter = false;
 
 % Node.isInterBearing and InterBearing.positionNode
 % generater bearing nodes
-isInter = true;
-[nodeNum, InterBearing, Node] = addNode(nodeNum, InterBearing, Node, hasLoosingBearing, isInter);
+if hasInterBearing
+    isInter = true;
+    [nodeNum, InterBearing, Node] = addNode(nodeNum, InterBearing, Node, hasLoosingBearing, isInter);
+end
 
 %%
 
