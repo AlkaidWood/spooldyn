@@ -80,16 +80,23 @@ end
 %%
 % plot the key points on each shaft
 for iShaft = 1:1:Shaft.amount
+    % create figure
     figureName = ['Mesh Result of Shaft ', num2str(iShaft)];
-    % line
     h = figure('name',figureName,'Visible', 'off');
-    plotLine = plot([0 keyPointsDistance{iShaft}(end)] , [0 0]); hold on
+    
+    
+    
+    % create axes (main axes + annotation axes)
+    mainAx = axes();
+
+    % line
+    plotLine = plot(mainAx, [0 keyPointsDistance{iShaft}(end)] , [0 0]); hold on
     plotLine.LineWidth = 3;
     plotLine.Color = '#5493BA';
     
     
     % key points
-    plotKeyPoints = scatter(keyPointsDistance{iShaft},...
+    plotKeyPoints = scatter(mainAx, keyPointsDistance{iShaft},...
                             zeros(length(keyPointsDistance{iShaft}), 1)); hold on
     plotKeyPoints.SizeData = 45;
     plotKeyPoints.MarkerFaceColor = '#CA3636';
@@ -98,12 +105,13 @@ for iShaft = 1:1:Shaft.amount
     
     % nodes
     nodeWithoutKeyPoints = setdiff(nodeDistance{iShaft}, keyPointsDistance{iShaft});
-    plotNodes = scatter(nodeWithoutKeyPoints,...
+    plotNodes = scatter(mainAx, nodeWithoutKeyPoints,...
                         zeros(length(nodeWithoutKeyPoints), 1)); hold on
     plotNodes.SizeData = 45;
     plotNodes.MarkerFaceColor = '#000000';
     plotNodes.MarkerEdgeColor = '#000000';
     plotNodes.Marker = '|';
+    plotNodes.LineWidth = 1.5;
 
     
     % find the nodes locating on iShaft (shaft node)
@@ -124,7 +132,7 @@ for iShaft = 1:1:Shaft.amount
     end
     xText = [NodeSegment.onShaftDistance];
     yText = -0.2 * ones(1,segmentNum);
-    text(xText,yText,nodeName, 'HorizontalAlignment', 'center')
+    text(mainAx, xText,yText,nodeName, 'HorizontalAlignment', 'center')
      
     
     % mark elements
@@ -199,7 +207,7 @@ for iShaft = 1:1:Shaft.amount
     end % end for iSegment = 1:1:segmentNum
     xText = [NodeSegment.onShaftDistance];
     yText = 0.12 * ones(1,segmentNum);
-    text(xText,yText,elementName, 'HorizontalAlignment', 'center',...
+    text(mainAx, xText,yText,elementName, 'HorizontalAlignment', 'center',...
          'VerticalAlignment', 'bottom');
     
      
@@ -240,9 +248,9 @@ for iShaft = 1:1:Shaft.amount
         xMark = xText;
         yMark = yText;
         % plot node name
-        text(xText,yText,nodeNameB{iSegment}, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'cap')
+        text(mainAx, xText,yText,nodeNameB{iSegment}, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'cap')
         % plot mark
-        plotBearingNodes = scatter(xMark,yMark); hold on
+        plotBearingNodes = scatter(mainAx, xMark,yMark); hold on
         plotBearingNodes.SizeData = 45;
         plotBearingNodes.MarkerFaceColor = '#7E2F8E';
         plotBearingNodes.MarkerEdgeColor = '#7E2F8E';
@@ -258,11 +266,155 @@ for iShaft = 1:1:Shaft.amount
     xlim([0-0.1*Shaft.totalLength(iShaft), Shaft.totalLength(iShaft)*1.1])
     ylim([-0.8-(max([1;noInColumnRecorder])-1)*0.25, 0.8])
     title(figureName)
+    % define some constants
+    main_height = 6+(max([1;noInColumnRecorder])-1)*0.8; % cm
+    bottom_height = 1.6; % cm
+    gap_height = 1; %cm
+    title_height = 0.8; % cm
+    % set figure positon
     h.Units = 'centimeters';
-    h.Position = [2 8 38 6+(max([1;noInColumnRecorder])-1)*0.8];
-    set(gca,'LooseInset',[0.01,0.01,0.01,0.01]);
+    h.Position = [2 8 38 main_height+bottom_height+gap_height+title_height];
+    % set main axes position
+    mainAx.Units = 'centimeters';
+    mainAx.Position = [1, bottom_height+gap_height, 36.5, main_height];
+    % set legend axes position
+    bottomAx = axes();
+    bottomAx.Units = 'centimeters';
+    bottomAx.Position = [1, 0.2, 36.5, bottom_height];
+    bottomAx.XTick = [];
+    bottomAx.YTick = [];
+    bottomAx.XTickLabel = [];
+    bottomAx.YTickLabel = [];
+    bottomAx.XColor = 'none';
+    bottomAx.YColor = 'none';
+    bottomAx.Color = 'none';
+    bottomAx.XLim = [0, 1];
+    bottomAx.YLim = [0, 1];
+    hold(bottomAx, 'on');
+
+    % judge bearing type
+    condition1 = [Node.isBearing];
+    if isfield(Node, 'interBearingNo')
+        n = numel(Node);
+        values = cell(n, 1);
+        for i = 1:n
+            values{i} = Node(i).interBearingNo;
+        end
+        boolVector = double(~cellfun(@isempty, values));
+        condition2 = boolVector(:)';
+    else
+        condition2 = boolean(zeros(size(condition1)));
+    end
+    hasOrdinaryBearing = sum(condition1 & ~condition2);
+    hasInterBearing = sum(condition1 & condition2);
+
+    % add here
+    % 确定文字图例项
+    textLegends = {};
+    % 检查各组件是否存在
+    hasDisk = any(~cellfun(@isempty, {NodeSegment.diskNo}));
+    hasBearing = any(~cellfun(@isempty, {NodeSegment.bearingNo}));
+    hasLoosingBearing = Parameter.ComponentSwitch.hasLoosingBearing;
+    hasInterBearingText = Parameter.ComponentSwitch.hasIntermediateBearing;
+    hasRubImpact = Parameter.ComponentSwitch.hasRubImpact;
+    hasCouplingMis = Parameter.ComponentSwitch.hasCouplingMisalignment;
+    hasCustom = Parameter.ComponentSwitch.hasCustom;
+    
+    % 添加存在的文字图例
+    if hasDisk
+        textLegends{end+1} = 'D: Disk';
+    end
+    if hasBearing
+        textLegends{end+1} = 'B: Bearing';
+    end
+    if hasInterBearingText
+        textLegends{end+1} = 'IB: Inter-shaft Bearing';
+    end
+    if hasCustom
+        textLegends{end+1} = 'Cus: Customize Force';
+    end
+    if hasLoosingBearing
+        textLegends{end+1} = 'B Loose: Loosening Bearing';
+    end
+    if hasRubImpact
+        textLegends{end+1} = 'Rub: Rub Impact';
+    end
+    if hasCouplingMis
+        textLegends{end+1} = 'CpMis: Coupling Misalignment';
+    end
+
+    % intergral all text
+    full_text = strjoin(textLegends, '       ');
+
+    
+    % 绘制几何图例 (第一行)
+    xlim(bottomAx, [-1,12])
+    xPositions = 0;
+    x_pos_gap = 1.5;
+    x_text_gap = 0.1;
+    yPos = 0.75; % 第一行y位置
+
+    % 绘制关键节点图例
+    s_key_point = scatter(bottomAx, xPositions, yPos);
+    s_key_point.SizeData = 45;
+    s_key_point.MarkerFaceColor = '#CA3636';
+    s_key_point.Marker = 'o';
+    s_key_point.MarkerEdgeColor = "none";
+    text(bottomAx, xPositions+x_text_gap, yPos, 'Key Node', ...
+            'HorizontalAlignment', 'left', ...
+            'VerticalAlignment', 'middle');
+    xPositions = xPositions + x_pos_gap;
+
+    % 绘制普通节点图例
+    if ~isempty(nodeWithoutKeyPoints)
+        s_node = scatter(bottomAx, xPositions, yPos);
+        s_node.SizeData = 45;
+        s_node.MarkerFaceColor = '#000000';
+        s_node.MarkerEdgeColor = '#000000';
+        s_node.Marker = '|';
+        s_node.LineWidth = 1.5;
+        text(bottomAx, xPositions+x_text_gap, yPos, 'Node', ...
+            'HorizontalAlignment', 'left', ...
+            'VerticalAlignment', 'middle');
+        xPositions = xPositions + x_pos_gap;
+    end
+
+    % 绘制普通轴承图例
+    if hasOrdinaryBearing
+        s_beairng = scatter(bottomAx, xPositions,yPos);
+        s_beairng.SizeData = 45;
+        s_beairng.MarkerFaceColor = '#7E2F8E';
+        s_beairng.MarkerEdgeColor = '#7E2F8E';
+        s_beairng.Marker = '^';
+        text(bottomAx, xPositions+x_text_gap, yPos, 'Mass at Bearing', ...
+            'HorizontalAlignment', 'left', ...
+            'VerticalAlignment', 'middle');
+        xPositions = xPositions + x_pos_gap + 0.5;
+    end
+    
+    % 绘制中介轴承图例
+    if hasInterBearing
+        s_interbeairng = scatter(bottomAx, xPositions,yPos);
+        s_interbeairng.SizeData = 45;
+        s_interbeairng.MarkerFaceColor = '#7E2F8E';
+        s_interbeairng.MarkerEdgeColor = '#7E2F8E';
+        s_interbeairng.Marker = 'd';
+        text(bottomAx, xPositions+x_text_gap, yPos, 'Mass at Inter-shaft Bearing', ...
+            'HorizontalAlignment', 'left', ...
+            'VerticalAlignment', 'middle');
+        xPositions = xPositions + x_pos_gap;
+    end
     
     
+    
+    % 绘制文字图例 (第二行)
+    xPositionsText = 0;
+    yPosText = 0.25; % 第二行y位置
+    
+    text(bottomAx, xPositionsText, yPosText, full_text, ...
+        'HorizontalAlignment', 'left', ...
+        'VerticalAlignment', 'middle');
+
     % save figure
     set(gcf,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
     figureName2 = ['meshDiagram/MeshResultOfShaft', num2str(iShaft), '.fig'];
