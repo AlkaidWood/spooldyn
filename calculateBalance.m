@@ -1,20 +1,77 @@
-%% calculateBalance
-% calculate the balancing positon of the rotor system in the static
-% condition
+%% calculateBalance - Calculate static equilibrium position of rotor system
+%
+% This function computes the static equilibrium position of a rotor system
+% under gravity loading at near-zero rotational speeds.
+%
 %% Syntax
-% q0 = calculateBalance(Parameter, targetTime)
+%  q0 = calculateBalance(Parameter)
+%  q0 = calculateBalance(Parameter, targetTime)
+%
 %% Description
-% Parameter: is a struct saving the model data
+% |calculateBalance| determines the static equilibrium position of a rotor
+% system by simulating its behavior under near-static conditions (minimal 
+% rotational speed) with gravity as the only external load. The function:
+% * Configures near-static simulation parameters
+% * Computes system response using numerical integration
+% * Extracts and averages displacement during target time interval
+% * Saves the equilibrium position to a MAT-file
 %
-% targetTime: is a 1*2 vector indicating the cutting time where the signal 
-% will be extracted to calculate. e.g. if targetTime = [2, 2.5], the 
-% response signal in t=2s~2.5s will be used to get average value as
-% balancing position
+%% Input Arguments
+% * |Parameter| - System parameter structure containing model configuration
+% * |targetTime| - [start, end] time interval for response averaging [s] 
+%   (default = [1, 1.5])
 %
-% q0 is column vector denoting the balcancing positon of each dof
+%% Output Arguments
+% * |q0| - Equilibrium position vector (displacements for each DOF) [m]
 %
-% Note: static condition here means that the rotational speed is near 0 and
-% the load is only gravity
+%% Static Condition Configuration
+% The function automatically configures near-static conditions:
+% * Rotational speed: 0.001 rad/s (effectively static)
+% * Acceleration phase: 1e8 seconds (effectively constant speed)
+% * No deceleration
+% * These settings ensure gravity dominates the system response
+%
+%% Response Calculation
+% 1. Simulation settings:
+%   * Time range: [0, targetTime(2)]
+%   * Solver: ode15s (stiff system solver)
+%   * Sampling: 5000 Hz
+% 2. Convergence monitoring:
+%   * Checks solver convergence status
+%   * Displays warning if non-convergence detected
+%
+%% Averaging Process
+% 1. Identifies time indices corresponding to |targetTime| interval
+% 2. Extracts displacement vectors within this interval
+% 3. Computes mean displacement along each DOF:
+%      q0 = mean(q(t) for t ∈ [targetTime(1), targetTime(2)])
+%
+%% Output Files
+% Creates MAT-file 'balancePosition.mat' containing:
+% * |qBalance| - Equilibrium position vector (same as q0)
+%
+%% Example
+%   % Load system parameters (After modeling and data saving)
+%   load('modelParameter.mat');
+%   % Calculate equilibrium position using default time interval
+%   eqPosition = calculateBalance(rotorParams);
+%   % Calculate with custom time interval
+%   eqPosition = calculateBalance(rotorParams, [1.5, 2.0]);
+%
+%% Dependencies
+%  Requires |calculateResponse| function for system simulation
+%
+%% Notes
+% * Simulation assumes no significant dynamic effects (rotating at 0.001 rad/s)
+% * Results are sensitive to gravity configuration in |Parameter|
+% * Recommended targetTime values ensure startup transients have decayed
+%
+%% See Also
+%  calculateResponse, ode15s
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function q0 = calculateBalance(Parameter, targetTime)

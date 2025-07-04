@@ -1,18 +1,72 @@
-%% inputIntermediateBearingHertz
-% Input parameters about intermediate bearing considering Hertzian contact
+%% inputIntermediateBearing - Configure intermediate bearings with Hertzian contact
+%
+% This function configures parameters for intermediate bearings connecting 
+% dual-shaft systems, supporting both linear and Hertzian contact models 
+% for rotor dynamics analysis.
+%
 %% Syntax
-% OutputParameter = inputIntermediateBearingHertz(InputParameter)
+%  OutputParameter = inputIntermediateBearing(InputParameter)
+%
 %% Description
-% InputParameter is a struct data saving all initial parameters except
-% intermediate bearing parameters considering Hertzian contact.
-% 
-% OutputParameter is a strct data recording all InputParameter and the data
-% about intermediate bearing considering Hertzian contact.
+% |inputIntermediateBearing| adds intermediate bearing configuration to 
+% existing rotor system parameters. It supports:
+% * Linear spring-damper connections between shafts
+% * Mass-spring chain connections
+% * Hertzian contact force modeling
 %
-% All of parameters about intermediate bearing considering Hertzian contact
-% should be typed into this .m file.
+% * Inputs:
+%   * |InputParameter| - Preconfigured system parameters structure 
 %
-% All vectors in this .m file should be in column
+% * Outputs:
+%   * |OutputParameter| - Updated parameter structure with intermediate bearings
+%
+%% Intermediate Bearing Parameters (IntermediateBearing structure)
+% * amount              - Number of intermediate bearings (scalar)
+% * betweenShaftNo      - Connected shaft indices [n×2 matrix]
+% * dofOfEachNodes      - Degrees of freedom per node (column vector)
+% * positionOnShaftDistance - Mounting positions from shaft ends [n×2 matrix, m]
+% * isHertzian          - Hertzian contact activation flags (logical column)
+% * isHertzianTop       - Hertzian force position flags (logical column)
+% * stiffness           - Horizontal stiffness [N/m] (matrix)
+% * stiffnessVertical   - Vertical stiffness [N/m] (matrix)
+% * damping             - Horizontal damping [Ns/m] (matrix)
+% * dampingVertical     - Vertical damping [Ns/m] (matrix)
+% * mass                - Intermediate masses [kg] (column vector)
+% * rollerNum           - Number of rolling elements (column vector)
+% * radiusInnerRace     - Inner race radii [m] (column vector)
+% * radiusOuterRace     - Outer race radii [m] (column vector)
+% * innerShaftNo        - Shaft containing inner race (column vector)
+% * clearance           - Bearing clearances [m] (column vector)
+% * contactStiffness    - Hertzian stiffness [N/m^1.5] (column vector)
+% * coefficient         - Contact force exponent (column vector)
+%
+%% Model Configuration Rules
+% * Connection Types:
+%   * Basic Connection: Linear spring-damper between shafts
+%   * Mass-spring Chain: Multiple masses with sequential stiffness/damping
+%   * Hertzian Contact: Nonlinear force at specified position 
+%     (isHertzianTop=true for top connection, false for bottom)
+% * Automatic Sorting:
+%   * Shaft indices automatically sorted in ascending order
+%   * Associated parameters (stiffness, mass, DOF) reordered consistently
+%
+%% System Flags
+% Automatically enables:
+% * |hasIntermediateBearing| in ComponentSwitch
+% * |hasHertzianForce| if any bearing has |isHertzian=true|
+%
+%% Example
+%   % Initialize system parameters
+%   sysParams = inputEssentialParameterBO();
+%   % Configure intermediate bearings
+%   sysParams = inputIntermediateBearing(sysParams);
+%
+%% See Also
+%  checkInputData, sortRowsWithShaftDis, inputEssentialParameterBO
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 %%

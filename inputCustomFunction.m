@@ -1,15 +1,62 @@
-%% inputRubImpact
-% Input parameters about rub impact fault
-%% Syntax
-%  OutputParameter = inputRubImpact(InputParameter)
-%% Description
-% InputParameter is a struct data saving all initial parameters except 
-% parameters about rub impact fault.
-% 
-% OutputParameter is a strct data recording all InputParameter and the data
-% about rub impact fault.
+%% inputCustomFunction - Configure custom force functions for rotor system
 %
-% All of parameters about rub impact should be typed into this .m file.
+% This function adds custom force definitions to a rotor system model, 
+% enabling user-defined forces applied at specified positions along shafts.
+%
+%% Syntax
+%  OutputParameter = inputCustomFunction(InputParameter)
+%
+%% Description
+% |inputCustomFunction| configures custom force functions applied at 
+% specific node positions on shafts. It enables:
+% * Definition of force application points
+% * Implementation of user-defined force functions
+% * Dynamic force calculation based on system state
+%
+% * Inputs:
+%   * |InputParameter| - Preconfigured rotor system parameters structure
+%
+% * Outputs:
+%   * |OutputParameter| - Updated parameter structure with custom force configuration
+%
+%% Custom Force Parameters (Custom structure)
+% * amount            - Number of custom force points (scalar)
+% * inShaftNo         - Shaft index for each force point (column vector)
+% * positionOnShaftDistance - Force positions from shaft ends [m] (column vector)
+% * force             - Handle to custom force calculation function
+%
+%% Force Function Interface
+% The custom force function must follow the signature:
+%   [F] = @(qn, dqn, tn, omega, domega, ddomega, Parameter)
+% * Input Arguments:
+%   * |qn|      - System displacement vector at time tn
+%   * |dqn|     - System velocity vector at time tn
+%   * |tn|      - Current simulation time
+%   * |omega|   - Rotational phases of shafts [rad]
+%   * |domega|  - Rotational speeds of shafts [rad/s]
+%   * |ddomega| - Rotational accelerations of shafts [rad/s²]
+%   * |Parameter| - Full system parameter structure
+% * Output:
+%   * |F| - Custom force vector (n×1) added to global force vector
+%
+%% Model Integration
+% * Creates additional nodes at specified force positions
+% * Automatically enables |hasCustom| flag in ComponentSwitch
+% * Forces are added to the global force vector during simulation
+%
+%% Example
+%   % Initialize system parameters
+%   sysParams = inputEssentialParameter();
+%   % Add custom forces
+%   sysParams = inputCustomFunction(sysParams);
+%   % Implement force function in customForce.m
+%
+%% See Also
+%  customForce, inputEssentialParameter
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 %%

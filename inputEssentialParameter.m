@@ -1,14 +1,90 @@
-%% inputEssentialParameter
-% Input parameters about shaft(s), disk(s), linear bearings and running
-% status
+%% inputEssentialParameter - Input essential parameters for rotor system
+%
+% This function initializes and returns the essential parameters for 
+% modeling a rotor system, including shaft configurations, disk 
+% properties, system status, and component switches. The parameters are 
+% organized in a structured format for dynamic analysis.
+%
 %% Syntax
-%  inputEssentialParameter()
+%  InitialParameter = inputEssentialParameter()
+%
 %% Description
-% There is no input parameter.
-% 
-% All essential initial parameters should be typed into this .m file.
-% 
-% All vectors in this .m file should be in column.
+% |inputEssentialParameter()| initializes parameters for shafts, disks, 
+% bearings, system running status, and component configuration switches. 
+% These parameters are essential for building the mathematical model of a 
+% rotor system in subsequent dynamic analysis. All vectors must be in column format.
+%
+%% Output Parameters
+% * InitialParameter - Structure containing all system parameters with fields:
+%   * Status       - System running status parameters (acceleration, speed profile)
+%   * Shaft        - Geometric and material properties of shafts
+%   * Disk         - Geometric and inertial properties of disks
+%   * Bearing      - Stiffness and damping properties of bearings
+%   * ComponentSwitch - Boolean flags for system component activation
+%
+%% Shaft Parameters (Shaft structure)
+% * amount           - Number of shafts (scalar)
+% * totalLength      - Column vector of shaft lengths [m]
+% * dofOfEachNodes   - Degrees of freedom per node (column vector)
+% * outerRadius      - Outer radii of shafts [m] (column vector)
+% * innerRadius      - Inner radii of shafts [m] (column vector)
+% * density          - Material densities [kg/m³] (column vector)
+% * elasticModulus   - Elastic moduli [Pa] (column vector)
+% * poissonRatio     - Poisson's ratios (column vector)
+% * rayleighDamping  - Rayleigh damping coefficients [alpha, beta]
+%
+%% Disk Parameters (Disk structure)
+% * amount               - Number of disks (scalar)
+% * inShaftNo            - Shaft index for each disk (column vector)
+% * dofOfEachNodes       - DOF per node (column vector)
+% * innerRadius          - Disk inner radii [m] (column vector)
+% * outerRadius          - Disk outer radii [m] (column vector)
+% * thickness            - Disk thicknesses [m] (column vector)
+% * positionOnShaftDistance - Mounting positions from shaft ends [m] (column vector)
+% * density              - Material densities [kg/m³] (column vector)
+% * eccentricity         - Mass eccentricities [m] (column vector)
+%
+%% Bearing Parameters (Bearing structure)
+% * amount                   - Number of bearings (scalar)
+% * inShaftNo                - Shaft index for each bearing (column vector)
+% * dofOfEachNodes           - DOF per bearing node (column vector)
+% * positionOnShaftDistance  - Mounting positions from shaft ends [m] (column vector)
+% * stiffness                - Horizontal stiffness coefficients [N/m] (matrix)
+% * stiffnessVertical        - Vertical stiffness coefficients [N/m] (matrix)
+% * damping                  - Horizontal damping coefficients [N·s/m] (matrix)
+% * dampingVertical          - Vertical damping coefficients [N·s/m] (matrix)
+% * mass                     - Bearing masses [kg] (column vector)
+% * isHertzian               - Hertzian contact flag (column vector)
+%
+%% Status Parameters (Status structure)
+% * ratio            - Speed ratio between shafts (vector)
+% * vmax             - Maximum rotational speed of shaft 1 [rad/s]
+% * acceleration     - Rotational acceleration of shaft 1 [rad/s²]
+% * duration         - Duration at maximum speed [s]
+% * isDeceleration   - Flag for deceleration phase (logical)
+% * vmin             - Minimum speed after deceleration [rad/s]
+% * isUseCustomize   - Flag for custom speed profile (logical)
+% * customize        - Handle to custom speed profile function
+%
+%% Component Switches (ComponentSwitch structure)
+% * hasGravity               - Enable gravitational effects (logical)
+% * hasIntermediateBearing   - Enable intermediate bearings (logical)
+% * hasLoosingBearing        - Enable bearing clearance (logical)
+% * hasRubImpact             - Enable rotor-stator rub (logical)
+% * hasCouplingMisalignment  - Enable coupling misalignment (logical)
+% * hasHertzianForce         - Enable Hertzian contact forces (logical)
+% * hasCustom                - Enable custom components (logical)
+%
+%% Example
+%   InitialParams = inputEssentialParameter();
+%   % Access shaft parameters:
+%   shaftLengths = InitialParams.Shaft.totalLength;
+%
+%% See Also
+%  checkInputData, calculateStatus
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
 
 
 %%
@@ -77,15 +153,6 @@ end
 % If you choose to input the bearing parameter here, you should not use the
 % inputBearingHertz()
 % model: shaft--k1c1--mass--k2c2--basement
-% Bearing.amount          = 3;
-% Bearing.inShaftNo       = [1; 1; 2];
-% Bearing.dofOfEachNodes  = [2; 2; 2]; % if mass=0, dof must be 0 
-% Bearing.positionOnShaftDistance = 1e-3 * [176.5; 718.5; 343.5];
-% % stiffness = [bearing1_k1, bearing1_k2; bearing2_k1, bearing2_k2]
-% Bearing.stiffness       = [1e8, 1e8; 1e8, 1e8; 1e8, 1e8]; % N*m
-% % damping = [bearing1_c1, bearing1_c2; bearing2_c1, bearing2_c2]
-% Bearing.damping         = [300, 300; 300, 300; 300, 300]; % N*s/m
-% Bearing.mass            = [3; 3; 3]; % kg
 
 Bearing.amount          = 0;
 Bearing.inShaftNo       = [];
