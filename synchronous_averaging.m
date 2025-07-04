@@ -1,80 +1,128 @@
-%--------------------------------------------------------------------------
-% Function: synchronous_averaging
-% Description:
-%   This function performs synchronous averaging on vibration data in the time domain. 
-%   Synchronous averaging is a noise reduction technique that averages multiple periods 
-%   of a signal to enhance the periodic components and reduce random noise. 
-%   The function converts the input signal to the angular domain, performs the averaging, 
-%   and then maps the result back to the time domain. It also provides an option to plot 
-%   the 3D spectrum of both the raw data and the noise - reduced data.
+%% synchronous_averaging - Perform synchronous averaging for vibration signal noise reduction
 %
-% Inputs:
-%   - raw_data: 
-%       Vibration data in the time domain. It can be a vector or a matrix. 
-%       If it is a matrix, each row or column can represent a different signal. 
-%       The function will automatically handle the data arrangement.
-%   - time: 
-%       A vector representing the time sequence corresponding to the raw_data. 
-%       It should have the same length as the raw_data if it is a vector, 
-%       or the same number of columns as the raw_data if it is a matrix.
-%   - tk: 
-%       A vector containing the start time of each pulse in the tacho signal. 
-%       This information is used to define the periods of the signal for averaging.
-%   - sampling_frequency: 
-%       The sampling frequency of the raw_data. It is used for time - domain interpolation 
-%       and plotting the spectrogram.
+% This function implements synchronous averaging to enhance periodic components 
+% in vibration signals while suppressing random noise. It transforms signals 
+% to the angular domain for precise period-based averaging and provides 
+% comprehensive visualization of noise reduction effects.
 %
-% Optional Inputs:
-%   - NameValue: 
-%       A structure with the following name - value pairs:
-%       - average_num: 
-%           Default value is 7. It represents the number of raw signal periods used in the 
-%           noise reduction. For example, if average_num = 7, the first 7 periods of the 
-%           raw signal will be averaged to generate the first piece of the noise - reduced 
-%           signal. Then, the 2nd to 8th periods will be averaged for the second piece, and so on.
-%       - angular_sampling_frequency: 
-%           Default value is 100. It is the sampling frequency for each period in the angular domain. 
-%           This parameter determines the resolution of the angular - domain signal.
-%       - is_plot_result: 
-%           Default value is false. If set to true, the function will generate a 3D spectrum plot 
-%           for both the raw data and the noise - reduced data.
-%       - T_window: 
-%           Default value is 0.5. It is used for plotting the result. The sampling window 
-%           for the spectrogram is calculated as T_window * T, where T is one revolution 
-%           from the tacho signal.
-%       - overlap: 
-%           Default value is 2/3. It is used for plotting the result. It represents the number 
-%           of overlapped samples in the spectrogram. The number of overlapped samples is 
-%           calculated as round(T_window * sampling_frequency * overlap).
-%       - frequency_lim: 
-%           Default value is 200. It is used for plotting the result. It limits the frequency 
-%           range in the spectrogram.
-%       - plot_index: 
-%           Default value is 1. It is a vector indicating the index of the data to be plotted. 
-%           For example, if plot_index = [1, 3], the 1st and 3rd signals in the raw_data 
-%           will be plotted.
+%% Syntax
+%   [data, time_new, tk1] = synchronous_averaging(raw_data, time, tk, sampling_frequency)
+%   [data, time_new, tk1] = synchronous_averaging(_, NameValues)
 %
-% Outputs:
-%   - data: 
-%       The vibration data after synchronous averaging. It has the same number of rows as 
-%       the input raw_data (after potential reshaping) and a number of columns determined 
-%       by the new time sequence.
-%   - time_new: 
-%       A vector representing the new time sequence corresponding to the noise - reduced data. 
-%       The length of the signal is reduced after noise reduction.
-%   - tk1: 
-%       A vector containing the start time of each new period after noise reduction.
+%% Description
+% |synchronous_averaging| applies advanced noise reduction through:
+% * Angular domain transformation using tacho pulse timing
+% * Multi-period synchronous averaging
+% * Adaptive period overlap control
+% * Time-domain signal reconstruction
+% * Optional 3D spectral comparison visualization
 %
-% Example:
-%   [data, time_new, tk1] = synchronous_averaging(raw_data, time, tk, sampling_frequency, ...
-%       'average_num', 5, 'angular_sampling_frequency', 150, 'is_plot_result', true, ...
-%       'T_window', 0.6, 'overlap', 0.7, 'frequency_lim', 250, 'plot_index', [2, 4]);
+%% Input Arguments
+% * |raw_data| - Raw vibration data [matrix]:
+%   * Rows: Signals (automatically oriented)
+%   * Columns: Time samples
+% * |time| - Time vector [1×n]:
+%   * Corresponding time points (seconds)
+% * |tk| - Tacho pulse times [vector]:
+%   * Start times of rotational periods (seconds)
+% * |sampling_frequency| - Original sampling rate [Hz]
 %
-% Notes:
-%   - The input raw_data and time should be consistent in terms of length or number of columns.
-%   - The function uses interpolation to convert the signal between the time and angular domains.
-%   - The spectrogram plot is generated using the specified window, overlap, and frequency limit.
-%--------------------------------------------------------------------------
+%% Name-Value Pair Arguments
+% * |'average_num'| - Averaging period count [integer]:
+%   * Default: 7
+%   * Example: 5 → Average 5 consecutive periods
+% * |'angular_sampling_frequency'| - Angular domain resolution [Hz]:
+%   * Default: 100
+%   * Determines points per revolution
+% * |'is_plot_result'| - Visualization flag [logical]:
+%   * |false|: No plots (default)
+%   * |true|: Generate 3D spectrum comparisons
+% * |'T_window'| - Spectrogram window duration [s]:
+%   * Default: 0.5
+%   * Relative to rotational period
+% * |'overlap'| - Spectrogram overlap ratio [0-1]:
+%   * Default: 2/3
+% * |'frequency_lim'| - Spectral display limit [Hz]:
+%   * Default: 200
+% * |'plot_index'| - Signal indices to plot [vector]:
+%   * Default: 1
+%   * Example: [1 3] → Plot 1st and 3rd signals
+%
+%% Output Arguments
+% * |data| - Noise-reduced data [matrix]:
+%   * Same orientation as input
+%   * Reduced length due to averaging
+% * |time_new| - New time vector [1×m]:
+%   * Corresponds to processed data
+% * |tk1| - Processed period start times [vector]:
+%   * Updated tacho pulse times
+%
+%% Algorithm
+% 1. Angular Domain Transformation:
+%    $\theta_k = \text{time2angular}(t_k)$
+% 2. Period Processing:
+%    * Calculate new period count: 
+%      $N_{\text{new}} = \left\lfloor \frac{N_{\text{total}} - N_{\text{avg}}}{N_{\text{avg}} - N_{\text{overlap}}} \right\rfloor + 1$
+% 3. Synchronous Averaging:
+%    $x_{\text{avg}}[n] = \frac{1}{N_{\text{avg}}} \sum_{k=0}^{N_{\text{avg}}-1} x[n + k \cdot N_{\theta}]$
+% 4. Time Domain Reconstruction:
+%    * Piecewise cubic interpolation
+%
+%% Noise Reduction Mechanism
+% * Enhances periodic components locked to rotation
+% * Attenuates:
+%   - Random noise
+%   - Non-synchronous vibrations
+%   - Transient disturbances
+% * Preserves:
+%   - Harmonic content
+%   - Sub/super-harmonics
+%   - Periodic modulations
+%
+%% Example
+% Process vibration data with visualization
+% fs = 5000; % Sampling frequency (Hz)
+% t = 0:1/fs:10; % Time vector
+% raw_vib = 20*randn(3,length(t)) + 10*sin(2*pi*50*t); % 3-channel vibration
+% tk = 0:0.1:10; % Tacho pulses (10Hz rotation)
+% 
+% % Apply synchronous averaging
+% [clean_data, t_new, tk_new] = synchronous_averaging(raw_vib, t, tk, fs, ...
+%     'average_num', 5, ...
+%     'angular_sampling_frequency', 120, ...
+%     'is_plot_result', true, ...
+%     'frequency_lim', 300, ...
+%     'plot_index', [1 3]);
+%
+%% Application Areas
+% * Gearbox fault detection
+% * Bearing defect diagnosis
+% * Rotor imbalance analysis
+% * Periodic component extraction
+% * Machine condition monitoring
+%
+%% Implementation Notes
+% 1. Signal Orientation:
+%    * Automatically handles row/column vectors
+%    * Maintains original channel orientation
+% 2. Angular Sampling:
+%    * Uniform angular resampling via |time2angular|
+% 3. Overlap Control:
+%    * Overlap periods = average_num - 1
+% 4. Interpolation:
+%    * Piecewise cubic Hermite interpolation (PCHIP)
+%    * Preserves signal shape and extrema
+%
+%% References
+% 1. Randall, R.B. (2011). Vibration-Based Condition Monitoring.
+% 2. McFadden, P.D. (1986). "Synchronous Averaging of Gear Vibration."
+%
+%% See Also
+% time2angular, spectrogram, interp1, pchip
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function [data, time_new, tk1] = synchronous_averaging(raw_data, time, tk, sampling_frequency, NameValue)
 

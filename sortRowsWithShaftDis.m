@@ -1,15 +1,50 @@
-%% sortRowsWithShaftDis
-% Input Bearing or IntermediateBearing (struct in initial parameters)
+%% sortRowsWithShaftDis - Sort bearing elements by shaft position
+%
+% This function orders bearing and intermediate bearing elements 
+% according to their position along their respective shafts.
+%
 %% Syntax
-%  orderedElement = sortRowsWithShaftDis(Element)
+%   orderedElement = sortRowsWithShaftDis(Element)
+%
 %% Description
-% Element: Bearing or IntermediateBearing (struct in initial parameters)
-% 
-% orderedElement: return a struct with order of both shaft and displacement
-% 
-% e.g. Bearing.onShaftNo = [1; 2; 1]; Bearing.positionOnShaftDistance = [5;
-% 2; 1]; Output => Bearing.onShaftNo = [1; 1; 2];
-% Bearing.positionOnShaftDistance = [1; 5; 2];
+% |sortRowsWithShaftDis| rearranges bearing elements by:
+%  1. Grouping elements by shaft number
+%  2. Sorting each group by position along the shaft
+%  3. Reconstructing the element structure in the new order
+%
+%% Input Arguments
+% * |Element| - Input element structure:
+%   * |Bearing| or |IntermediateBearing| structure from parameters
+%   * Must contain:
+%     - |inShaftNo| or |betweenShaftNo|: Shaft identifier vector
+%     - |positionOnShaftDistance|: Position vector along shaft
+%     - |amount|: Total element count
+%
+%% Output Arguments
+% * |orderedElement| - Sorted element structure:
+%   * Elements sorted first by |inShaftNo|/|betweenShaftNo|
+%   * Elements with same shaft number sorted by |positionOnShaftDistance|
+%   * Retains all original fields with updated |amount|
+%
+%% Algorithm
+% 1. Data Extraction:
+%    * Removes |amount| field for processing
+%    * Identifies shaft identifier field (|inShaftNo| or |betweenShaftNo|)
+%    * Gets unique shaft numbers
+% 2. Group Processing:
+%    * For each shaft group:
+%      a) Extracts all elements on the shaft
+%      b) Sorts elements by |positionOnShaftDistance|
+% 3. Data Reconstruction:
+%    * Concatenates sorted shaft groups
+%    * Restores |amount| field
+%
+%% See Also
+% sortrows, unique, struct2cell, cell2struct
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function orderedElement = sortRowsWithShaftDis(Element)
 Temporary = rmfield(Element,'amount');

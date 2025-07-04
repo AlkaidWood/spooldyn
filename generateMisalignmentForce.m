@@ -1,27 +1,90 @@
-%% generateMisalignmentForce
-% generate a 'misalignmentForce.m' file
+%% generateMisalignmentForce - Generate coupling misalignment force function
+%
+% This function creates a MATLAB function file (misalignmentForce.m) that 
+% calculates coupling misalignment forces in rotor systems based on 
+% specified geometric offsets and rotational dynamics.
+%
 %% Syntax
-% generateMisalignmentForce(CouplingMisalignment, Mesh)
+%  generateMisalignmentForce(CouplingMisalignment, Mesh)
+%
 %% Description
-% CouplingMisalignment: is a struct saving the relevant data
+% |generateMisalignmentForce| constructs a function to compute coupling 
+% misalignment forces resulting from:
+% * Parallel offsets (ΔY)
+% * Angular misalignments (Δα)
+% * Inter-shaft distances (ΔL)
+% The generated function implements:
+% * Equivalent misalignment calculation
+% * Speed-dependent force formulation
+% * Phase-dependent force components
 %
-% Mesh: is a struct saving the information about meshing
+%% Input Arguments
+% * |CouplingMisalignment| - Misalignment configuration structure:
+%   * |parallelOffset|     % Parallel offset ΔY [m]
+%   * |distance|           % Inter-shaft distance ΔL [m]
+%   * |angleOffset|        % Angular misalignment Δα [rad]
+%   * |mass|               % Coupling mass m [kg]
+%   * |positionOnShaftNode|% Mounting node indices [vector]
+%   * |inShaftNo|          % Connected shaft indices [vector]
+%   * |amount|             % Number of couplings [scalar]
 %
-% generate a misalignmentForce.m file in the root directory
-%% Symbols
-% $\Delta Y$: parallel offset
+% * |Mesh| - Discretization structure with:
+%   * |dofInterval|        % DOF ranges per node [n×2 matrix]
+%   * |dofNum|             % Total DOF count [scalar]
 %
-% $\Delta L$: distance between two shafts
+%% Physical Formulation
+% 1. Equivalent Misalignment:
+%   $$\Delta E = \frac{\Delta Y}{2} + \frac{\Delta L}{2} \tan\left(\frac{\Delta\alpha}{2}\right)$$
+% 2. Force Calculation:
+%   $f = -2m \Delta E \cdot \omega^2$
+% 3. Directional Components:
+%   * X-component: $f_x = f \cdot \sin(2\omega t)$
+%   * Y-component: $f_y = f \cdot \cos(2\omega t)$
 %
-% $\Delta \alpha$: angle offset
-% 
-% $m$: mass of the coupling 
+%% Generated Function (misalignmentForce.m)
+% Function Signature:
+%   fMisalignment = misalignmentForce(omega, domega)
+% * Inputs:
+%   - |omega|: Rotational phase vector [rad]
+%   - |domega|: Rotational speed vector [rad/s]
+% * Output:
+%   - |fMisalignment|: Misalignment force vector [n×1]
 %
-% $\Delta E$: equivalent misalignment
-% 
-% $$\Delta E = \Delta Y / 2 + \Delta L /2 \tan \left( \Delta\alpha / 2 \right)$$
-% 
-
+%% Implementation Details
+% 1. Precomputation:
+%   * Calculates equivalent misalignment ΔE during generation
+%   * Determines force coefficient: $-2m\Delta E$
+% 2. Runtime Calculation:
+%   * Computes force magnitude proportional to $\omega^2$
+%   * Applies phase-dependent sin/cos modulation
+%   * Distributes forces to appropriate DOFs
+% 3. File Handling:
+%   * Overwrites existing misalignmentForce.m
+%   * Creates temporary .txt file during generation
+%
+%% Example
+% % Configure misalignment parameters
+% misalignCfg = struct('parallelOffset', 0.001, ...
+%                     'distance', 0.05, ...
+%                     'angleOffset', 0.01, ...
+%                     'mass', 1.5, ...
+%                     'positionOnShaftNode', [3, 5], ...
+%                     'inShaftNo', [1, 2], ...
+%                     'amount', 2);
+% % Generate force function (After Modeling)
+% generateMisalignmentForce(misalignCfg, meshData);
+% % Usage in simulation:
+% f_misalign = misalignmentForce(phase_vector, speed_vector);
+%
+%% Dependencies
+% Requires proper DOF mapping from |meshModel|
+%
+%% See Also
+% generateDynamicEquation, generateHertzianForce, meshModel
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function generateMisalignmentForce(CouplingMisalignment, Mesh)
 

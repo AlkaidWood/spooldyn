@@ -1,13 +1,93 @@
-%% generateRubImpactForce
-% generate a 'rubImpactForce.m' file
+%% generateRubImpactForce - Generate rub-impact force calculation function
+%
+% This function creates a MATLAB function file (rubImpactForce.m) that 
+% computes rub-impact forces between rotor and stator components in 
+% rotor dynamics simulations.
+%
 %% Syntax
-% generateRubImpactForce(RubImpact, Mesh)
+%  generateRubImpactForce(RubImpact, Mesh)
+%
 %% Description
-% RubImpact: is a struct saving the relevant data
+% |generateRubImpactForce| constructs a function to calculate nonlinear 
+% rub-impact forces based on rotor-stator clearance violations. The 
+% generated function:
+% * Implements radial clearance checking
+% * Computes tangential friction forces
+% * Applies nonlinear stiffness effects
+% * Distributes forces to appropriate DOFs
 %
-% Mesh: is a struct saving the information about meshing
+%% Input Arguments
+% * |RubImpact| - Rub-impact configuration structure:
+%   * |positionOnShaftNode| % Shaft node indices for rub points [n×1]
+%   * |stiffness|           % Contact stiffness coefficients [N/m] [n×1]
+%   * |coefficientOfFriction| % Friction coefficients [n×1]
+%   * |interval|            % Radial clearances [m] [n×1]
+%   * |amount|              % Number of rub points [scalar]
 %
-% generate a rubImpactForce.m file in the root directory
+% * |Mesh| - Discretization structure with:
+%   * |dofInterval|         % DOF ranges per node [n×2 matrix]
+%   * |dofNum|              % Total DOF count [scalar]
+%
+%% Generated Function (rubImpactForce.m)
+% Function Signature:
+%   fRub = rubImpactForce(qn)
+% * Input:
+%   - |qn|: Displacement vector [n×1]
+% * Output:
+%   - |fRub|: Rub-impact force vector [n×1]
+%
+%% Force Calculation Algorithm
+% For each rub point i:
+% 1. Radial Displacement Calculation:
+%    $e = \sqrt{x_i^2 + y_i^2}$
+% 2. Clearance Check:
+%    if $e \ge \delta_i$ (radial clearance)
+% 3. Force Components:
+%    $f_x = k_i \left(1 - \frac{\delta_i}{e}\right) (x_i - \mu_i y_i)$
+%    $f_y = k_i \left(1 - \frac{\delta_i}{e}\right) (\mu_i x_i + y_i)$
+% 4. Force Application:
+%    * Applies to X and Y DOFs of rub point
+%
+%% Physical Interpretation
+% * |stiffness| (k): Contact stiffness during rub events
+% * |coefficientOfFriction| (μ): Friction coefficient
+% * |interval| (δ): Radial clearance between rotor and stator
+%
+%% Implementation Details
+% 1. Parameter Mapping:
+%   * Automatically maps rub points to DOFs
+%   * Configures force calculation parameters
+% 2. File Generation:
+%   * Overwrites existing rubImpactForce.m
+%   * Creates temporary .txt file during generation
+% 3. Force Calculation:
+%   * Uses radial displacement magnitude
+%   * Implements conditional force application
+%   * Handles multiple rub points
+%
+%% Example
+% % Configure rub-impact parameters
+% rubCfg = struct('positionOnShaftNode', [3, 5], ...
+%                 'stiffness', [1e6, 1.5e6], ...
+%                 'coefficientOfFriction', [0.2, 0.25], ...
+%                 'interval', [0.001, 0.0008], ...
+%                 'amount', 2);
+% % Generate force function
+% generateRubImpactForce(rubCfg, meshData);
+% % Usage in simulation:
+% rubForce = rubImpactForce(q_current);
+%
+%% Application Notes
+% * The function only activates when radial displacement exceeds clearance
+% * Combines normal contact force with tangential friction
+% * Nonlinear stiffness increases as clearance decreases
+%
+%% See Also
+% generateDynamicEquation, generateHertzianForce, bearingElement
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function generateRubImpactForce(RubImpact, Mesh)

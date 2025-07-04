@@ -1,44 +1,67 @@
-%BEARINGELEMENTINTER Generate stiffness/damping matrices for non-mass intermediate bearings
+%% bearingElementInter - Generate stiffness/damping matrices for non-mass intermediate bearings
 %
-% Syntax:
-%   [Ke, Ce] = bearingElementInter(ABearing)
+% This function constructs partitioned stiffness and damping matrices for 
+% intermediate bearings without concentrated mass connecting two shaft nodes.
 %
-% Input Arguments:
-%   ABearing - Bearing element configuration structure with fields:
-%       .dofOnShaftNode: [1×2 double]     DOFs count on connected shaft nodes
-%       .stiffness: double                Direct stiffness in principal directions
-%       .stiffnessVertical: double        Vertical stiffness (optional, same as stiffness by default)
-%       .damping: double                  Direct damping in principal directions
-%       .dampingVertical: double          Vertical damping (optional, same as damping by default)
+%% Syntax
+%  [Ke, Ce] = bearingElementInter(ABearing)
 %
-% Output Arguments:
-%   Ke - [4×4 cell array]                 Element stiffness matrix partitions
-%   Ce - [4×4 cell array]                 Element damping matrix partitions
+%% Description
+% |bearingElementInter| calculates partitioned stiffness and damping matrices 
+% for massless intermediate bearings connecting two shaft nodes. The function:
+% * Models orthotropic bearing properties in local coordinates
+% * Creates partitioned matrices for node-node connectivity
+% * Handles different DOF counts on connected shaft nodes
 %
-% Description:
-%   Creates partitioned stiffness and damping matrices for intermediate bearings
-%   without concentrated mass. Matrices are generated in local coordinates and
-%   partitioned for connection between two shaft nodes.
+%% Input Arguments
+% * |ABearing| - Bearing properties structure:
+%   * |dofOnShaftNode|    % DOF counts on connected shaft nodes [1×2 vector]
+%   * |stiffness|         % Horizontal stiffness coefficient [N/m]
+%   * |damping|           % Horizontal damping coefficient [N·s/m]
+%   * |stiffnessVertical| % Vertical stiffness coefficient [N/m] (optional, defaults to horizontal stiffness)
+%   * |dampingVertical|   % Vertical damping coefficient [N·s/m] (optional, defaults to horizontal damping)
 %
-% Notes:
-%   - Throws error if multiple stiffness/damping values are provided
-%   - Vertical stiffness/damping defaults to horizontal values if not specified
-%   - Matrix partitions follow node connectivity order [start_node, end_node]
+%% Output Arguments
+% * |Ke| - Partitioned stiffness matrix (2×2 cell array):
+%   * |Ke{1,1}| - Stiffness matrix for start node DOF
+%   * |Ke{1,2}| - Coupling stiffness matrix between start and end nodes
+%   * |Ke{2,1}| - Coupling stiffness matrix between end and start nodes
+%   * |Ke{2,2}| - Stiffness matrix for end node DOF
+% * |Ce| - Partitioned damping matrix (2×2 cell array with same structure)
 %
-% Example:
-%   generate K11 K12 K21 K22 C11 C12 C21 C22 for inter-shaft bearing without
-%   % mass
-%   AInterbearing.dofOnShaftNode = [4, 4];
-%   AInterbearing.stiffness = 1e6;
-%   AInterbearing.stiffnessVertical = 1e6;
-%   AInterbearing.damping = 200;
-%   AInterbearing.dampingVertical = 300;
-%   [Ke, Ce] = bearingElementInter(AInterbearing);
+%% Matrix Construction Rules
+% 1. Core matrix components:
+%   * Stiffness core: |Kin = [kV, 0; 0, kW]|
+%   * Damping core: |Cin = [cV, 0; 0, cW]|
+% 2. Partitioning:
+%   * |K11| = |Kin| added to start node DOF positions
+%   * |K12| = |-Kin| added to start-to-end coupling positions
+%   * |K21| = |-Kin| added to end-to-start coupling positions
+%   * |K22| = |Kin| added to end node DOF positions
+% 3. Orthotropic modeling:
+%   * Horizontal and vertical components remain uncoupled
 %
-% See also BEARINGELEMENTINTERMASS, ADDELEMENTIN
+%% Default Behavior
+% * If |stiffnessVertical| not provided, uses same value as |stiffness|
+% * If |dampingVertical| not provided, uses same value as |damping|
+% * Zero values are filtered from stiffness/damping inputs
+%
+%% Example
+% % Configure intermediate bearing between two shafts
+% bearingCfg.dofOnShaftNode = [4, 4];   % DOF for both connected shafts
+% bearingCfg.stiffness = 1e6;            % Horizontal stiffness
+% bearingCfg.stiffnessVertical = 1.2e6;   % Vertical stiffness
+% bearingCfg.damping = 500;             % Horizontal damping
+% bearingCfg.dampingVertical = 600;     % Vertical damping
+% % Generate partitioned matrices
+% [Ke, Ce] = bearingElementInter(bearingCfg);
+%
+%% See Also
+% bearingElement, bearingElementInterMass, addElementIn
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function [Ke, Ce] = bearingElementInter(ABearing)
 %%

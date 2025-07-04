@@ -1,26 +1,70 @@
-%% addTriangularBlock
-% Add a triangular block with a simicircle gap in figure along x-axis (default).
+%% addTriangularBlock - Add 3D triangular block with semicircular gap visualization
+%
+% This function creates and displays a 3D triangular block with a semicircular 
+% gap at the top, with customizable dimensions, position, and orientation.
+%
 %% Syntax
-%  addTriangularBlock(position,radius,height,width,thickness,NODE_IN_CIRCLE,axisName,RotateInfo)
+%  addTriangularBlock(ax, position, radius, height, width, thickness)
+%  addTriangularBlock(ax, position, radius, height, width, thickness, NODE_IN_CIRCLE)
+%  addTriangularBlock(ax, position, radius, height, width, thickness, NODE_IN_CIRCLE, axisName)
+%  addTriangularBlock(ax, position, radius, height, width, thickness, NODE_IN_CIRCLE, axisName, RotateInfo)
+%
 %% Description
-% position = [xPosition; yPosition; zPosition]: the distance from oringin 
-% point to the center of the circle with unit m. 
-% 
-% radius: radius of the circle at the top of the triangle with unit m.
+% |addTriangularBlock| generates a 3D triangular block model with a semicircular 
+% top gap and adds it to the specified axes. The block can be oriented along 
+% any principal axis (x, y, or z) and supports optional rotation transformations.
 %
-% height: the height of this block
+%% Input Parameters
+% * |ax| - Target axes handle for visualization
+% * |position| - [x; y; z] coordinates of block center [m]
+% * |radius| - Radius of semicircular gap at block top [m]
+% * |height| - Vertical height of block [m]
+% * |width| - Bottom width of triangular block [m]
+% * |thickness| - Depth along orientation axis [m] (default=1)
+% * |NODE_IN_CIRCLE| - Number of circumferential interpolation nodes (default=10)
+% * |axisName| - Orientation axis ('x', 'y', or 'z'; default='x')
+% * |RotateInfo| - Rotation configuration structure with fields:
+%   * |isRotate| - Rotation activation flag (logical)
+%   * |oringin| - [x; y; z] rotation origin point
+%   * |angle| - Rotation angle [degrees]
+%   * |direction| - [x; y; z] rotation axis vector
 %
-% width: the width of the bottom line
+%% Geometry Requirements
+% * |width| must be greater than 2*|radius|
+% * |height| must be greater than 2*|radius|
 %
-% thickness: the thickness along x-axis (default).
+%% Visualization Features
+% * Creates triangular block with semicircular top gap
+% * Applies semi-transparent metallic color scheme (RGB: [160,175,190]/255)
+% * Supports orientation along any principal axis
+% * Optional rotation transformation around arbitrary axis
+% * Edge lines disabled for cleaner visualization
+% * Face alpha set to 0.7 for semi-transparent effect
 %
-% NODE_IN_CIRCLE: the number of interpolation nodes along a simicircle.
+%% Implementation Details
+% 1. Generates semicircular gap geometry
+% 2. Creates triangular block base
+% 3. Performs coordinate transformation based on axis orientation
+% 4. Translates to target position
+% 5. Applies optional rotation transformation
+% 6. Renders with specified color and transparency
 %
-% axisName: the axis length dirction being in. Defaul value is 'x'. Optional
-% value is 'x', 'y', 'z'.
+%% Example
+%   % Create figure and axes
+%   fig = figure;
+%   ax = axes(fig);
+%   % Add triangular block at [0,0,0] with rotation
+%   RotateInfo = struct('isRotate', true, 'oringin', [0;0;0], ...
+%                       'angle', 45, 'direction', [0;1;0]);
+%   addTriangularBlock(ax, [0;0;0], 0.2, 1, 0.8, 0.3, 20, 'z', RotateInfo);
+%   view(3); axis equal; grid on;
 %
-% RotateInfo: is a struct with field isRotate(boolean), orgingin(3*1
-% vector), angle(scalar), dirction(3*1 vector)
+%% See Also
+%  addCylinder, surf, rotate
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function addTriangularBlock(ax, position,radius,height,width,thickness,NODE_IN_CIRCLE,axisName,RotateInfo)
 

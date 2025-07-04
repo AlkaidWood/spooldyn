@@ -1,54 +1,100 @@
-%CALCULATERESPONSE Compute time-domain response of rotor-bearing system
+%% calculateResponse - Compute time-domain response of rotor-bearing systems
 %
-% Syntax:
-%   [q, dq, t] = calculateResponse(Parameter, tSpan, samplingFrequency)
-%   [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, q0, NameValueArgs)
+% This function calculates the dynamic response of rotor-bearing systems 
+% using various numerical integration methods, supporting both custom and 
+% standard rotational speed profiles.
 %
-% Input Arguments:
-%   Parameter - System configuration structure containing:
-%       .Mesh: [1×1 struct]            Discretization data with .dofNum
-%       .Status: [1×1 struct]         Operation parameters:
-%           .vmax, .vmin: double      Max/min rotational speeds (rad/s)
-%           .acceleration: double     Rotational acceleration (rad/s²)
-%           .isUseCustomize: logical  Custom speed profile flag
-%   tSpan - [1×2 double]              Time range [tStart, tEnd] (seconds)
-%   samplingFrequency - double        Sampling rate (Hz)
-%   q0 - [n×1 double]                 Initial displacement vector (optional)
-%   NameValueArgs - Optional parameters:
-%       .isPlotStatus: logical       Plot rotational status (default: true)
-%       .reduceInterval: integer     Data downsampling factor (default: 1)
-%       .calculateMethod: char       Solver type: 'RK'/'ode45'/'ode15s'/'ode23s' (default: 'RK')
-%       .options: struct             ODE solver options (ode45/ode15s only)
-%       .isUseBalanceAsInitial: logical Use balanced position as initial
-%       .isFreshInitial: logical      Force new balance calculation
+%% Syntax
+%  [q, dq, t] = calculateResponse(Parameter, tSpan, samplingFrequency)
+%  [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, q0, NameValueArgs)
 %
-% Output Arguments:
-%   q - [n×m double]                 Displacement time history (DOFs × time)
-%   dq - [n×m double]                Velocity time history
-%   t - [1×m double]                 Time vector
-%   convergenceStr - char            Convergence status message
+%% Description
+% |calculateResponse| computes the time-domain response of rotor systems 
+% under specified operating conditions. The function:
+% * Supports multiple numerical integration methods
+% * Handles custom and standard rotational speed profiles
+% * Provides automatic initial condition generation
+% * Includes data reduction for large simulations
+% * Monitors numerical convergence during integration
 %
-% Description:
-%   Solves rotor system dynamics using specified numerical method:
-%   - Runge-Kutta (4th order) for time-domain integration
-%   - MATLAB ODE solvers (ode45/ode15s) for stiff/non-stiff systems
-%   - Supports automatic initial condition generation from static balance
-%   - Includes data downsampling for large datasets
-%   - Monitors numerical convergence during simulation
+%% Input Arguments
+% * |Parameter| - System configuration structure containing:
+%   * |Mesh|: Discretization data with |dofNum| (total DOF count)
+%   * |Status|: Operational parameters including:
+%     * |vmax|, |vmin|: Max/min rotational speeds [rad/s]
+%     * |acceleration|: Rotational acceleration [rad/s²]
+%     * |isUseCustomize|: Custom speed profile flag
+%   * |Shaft|: Shaft configuration data
+% * |tSpan| - Simulation time range [start, end] [s]
+% * |samplingFrequency| - Output sampling rate [Hz]
+% * |q0| - Initial displacement vector (optional)
+% * |NameValueArgs| - Optional name-value pairs:
+%   * |isPlotStatus|: Plot rotational status (default: true)
+%   * |reduceInterval|: Data downsampling factor (default: 1)
+%   * |calculateMethod|: Solver type ('RK', 'ode45', 'ode15s', 'ode23s') (default: 'RK')
+%   * |options|: ODE solver options (for MATLAB ODE solvers)
+%   * |isUseBalanceAsInitial|: Use static balance position as initial condition (default: false)
+%   * |isFreshInitial|: Force recalculation of balance position (default: false)
 %
-% Examples:
-%   % Basic usage with default parameters
-%   [q, dq, t] = calculateResponse(sysParams, [0 10], 1000);
+%% Output Arguments
+% * |q| - Displacement time history [n×m matrix, DOFs × time]
+% * |dq| - Velocity time history [n×m matrix]
+% * |t| - Time vector [1×m]
+% * |convergenceStr| - Convergence status message (empty if converged)
 %
-%   % Use ODE15s solver with custom options
-%   opts = odeset('RelTol',1e-6);
-%   [q, dq, t] = calculateResponse(sysParams, [0 5], 2000, ...
-%       'calculateMethod', 'ode15s', 'options', opts);
+%% Numerical Integration Methods
+% 1. ​**Runge-Kutta (RK)​**:
+%    * Classic 4th-order explicit method
+%    * Step-by-step time integration
+%    * Real-time convergence monitoring
+% 2. ​**MATLAB ODE Solvers**:
+%    * |ode45|: Non-stiff problems
+%    * |ode15s|: Stiff problems
+%    * |ode23s|: Moderately stiff problems
 %
-% See also DYNAMICEQUATION, RUNGEKUTTA, ODE45, ODE15S, CALCULATEBALANCE
+%% Initial Condition Handling
+% * Automatic static balance calculation when |isUseBalanceAsInitial=true|
+% * Balance position caching in 'balancePosition.mat'
+% * Zero initial conditions by default
+% * Custom initial vectors supported
+%
+%% Data Management
+% * Time vector generation with specified sampling rate
+% * Optional downsampling via |reduceInterval|
+% * Convergence warnings for non-convergent solutions
+%
+%% Rotational Status Processing
+% When |isPlotStatus=true|:
+% 1. Computes rotational parameters for each shaft:
+%    * Angular position, velocity, acceleration
+% 2. Supports both standard and custom speed profiles
+% 3. Generates rotational status plots
+%
+%% Examples
+% % Basic simulation with Runge-Kutta (After modeling)
+% [q, dq, t] = calculateResponse(sysParams, [0 10], 1000);
+%
+% % ODE15s with custom options (After modeling)
+% opts = odeset('RelTol',1e-6, 'AbsTol',1e-9);
+% [q, dq, t] = calculateResponse(sysParams, [0 5], 2000, ...
+%     'calculateMethod', 'ode15s', 'options', opts);
+%
+% % Use static balance as initial condition (After modeling)
+% [q, dq, t] = calculateResponse(sysParams, [0 3], 1500, ...
+%     'isUseBalanceAsInitial', true);
+%
+%% Dependencies
+% * |dynamicEquation| - System equation of motion
+% * |rungeKutta| - Custom RK4 implementation
+% * |calculateBalance| - Static equilibrium calculation
+% * |plotRunningStatus| - Rotational parameter visualization
+%
+%% See Also
+% dynamicEquation, rungeKutta, ode45, ode15s, calculateBalance
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function [q, dq, t, convergenceStr] = calculateResponse(Parameter, tSpan, samplingFrequency, q0, NameValueArgs)
 % check input

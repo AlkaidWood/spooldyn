@@ -1,5 +1,8 @@
-%% MESHMODEL - Generate discretized mesh for multi-shaft rotor systems
-% Creates nodal mesh structure with component mapping for FEM analysis.
+%% meshModel - Generate discretized finite element mesh for multi-shaft rotor systems
+%
+% This function creates a comprehensive nodal mesh structure for finite element
+% analysis of rotor-bearing systems with complex configurations. It handles
+% automatic mesh generation, key component identification, and DOF mapping.
 %
 %% Syntax
 %   Parameter = meshModel(InitialParameter)
@@ -7,89 +10,105 @@
 %   Parameter = meshModel(InitialParameter, manualGrid)
 %
 %% Description
-% |MESHMODEL| performs automated mesh generation for rotor systems with:
-% * Automatic key node detection (bearings/disks/special components)
-% * Adaptive mesh refinement strategies
-% * Manual mesh specification capabilities
-% * Node-component relationship mapping
+% |meshModel| performs sophisticated mesh generation for rotor dynamics models:
+% * Automatically detects critical components (bearings, disks, etc.)
+% * Implements adaptive mesh refinement strategies
+% * Supports custom mesh specifications
+% * Establishes node-component relationships
+% * Manages degree-of-freedom (DOF) allocation
 %
 %% Input Arguments
-% *InitialParameter* - System configuration structure containing:
-%   .Shaft                  % Shaft properties (struct array)
-%     .totalLength          % [N×1] Shaft lengths [m]
-%     .dofOfEachNodes       % [N×1] DOF per node
-%   .Disk                   % Disk parameters (struct array)
-%     .inShaftNo            % [M×1] Parent shaft indices
-%     .positionOnShaftDistance % [M×1] Axial positions [m]
-%   .Bearing               % Bearing parameters (struct array)
-%     .inShaftNo            % [K×1] Parent shaft indices
-%     .positionOnShaftDistance % [K×1] Axial positions [m]
-%   .ComponentSwitch       % System component flags (struct)
-%     .hasRubImpact         % Rub-impact activation (optional)
-%     .hasIntermediateBearing % Intermediate bearing flag (optional)
-%     .hasCouplingMisalignment % Coupling misalignment flag (optional)
-%     .hasLoosingBearing    % Bearing clearance flag (optional)
+% * |InitialParameter| - System configuration structure containing:
+%   * |Shaft|: Shaft properties [struct array]
+%     .totalLength         % Length of each shaft [m] [nShafts×1]
+%     .dofOfEachNodes      % DOFs per node [scalar or nShafts×1]
+%   * |Disk|: Disk parameters [struct array]
+%     .inShaftNo           % Parent shaft index [mDisks×1]
+%     .positionOnShaftDistance % Axial position [m] [mDisks×1]
+%   * |Bearing|: Bearing parameters [struct array]
+%     .inShaftNo            % Parent shaft index [kBearings×1]
+%     .positionOnShaftDistance % Axial position [m] [kBearings×1]
+%   * |ComponentSwitch|: Component activation flags [struct]
+%     .hasRubImpact         % Rub-impact activation [logical]
+%     .hasIntermediateBearing % Intermediate bearing flag [logical]
+%     .hasCouplingMisalignment % Coupling misalignment flag [logical]
+%     .hasLoosingBearing   % Bearing clearance flag [logical]
+%     .hasCustom           % Custom component flag [logical]
+%   * see also inputEssentialParameter(), inputBearingHertz(), inputInmediateBearing()
 %
-% *gridFineness* - Mesh resolution specification:
-%   'low'       (default) % 1 element between key nodes
-%   'middle'              % 4 elements between key nodes  
-%   'high'                % 10 elements between key nodes
+% * |gridFineness| - Mesh resolution specification [string]:
+%   * |'low'|: Coarse mesh (default, 1 element between key nodes)
+%   * |'middle'|: Medium mesh (4 elements between key nodes)
+%   * |'high'|: Fine mesh (10 elements between key nodes)
 %
-% *manualGrid* - [1×N cell] Custom mesh definition:
-%   {n} = [a1 a2... am]   % Element counts per segment for shaft n
+% * |manualGrid| - Custom mesh definition [cell array]:
+%   {n} = [e1 e2 ... em]  % Element counts per segment (divided by key nodes) for shaft n
 %
-%% Output
-% *Parameter* - Enhanced structure with mesh data:
-%   .Mesh                 % Discretization results (struct)
-%     .nodeDistance       % [1×N cell] Node positions per shaft [m]
-%     .Node               % [P×1 struct] Node properties:
-%       .name             % Node ID
-%       .onShaftNo        % Parent shaft index
-%       .onShaftDistance  % Axial position [m]
-%       .dof              % DOF count
-%       .diskNo           % Associated disk ID
-%       .bearingNo        % Associated bearing ID
-%       .isBearing        % Bearing node flag
-%     .dofInterval        % [P×2] DOF ranges per node
-%     .dofOnNodeNo        % [Q×1] Node mapping for DOFs
-%   .Disk
-%     .positionOnShaftNode
-%   .Bearing
-%     .positionOnShaftNode
-%     .positionNode
-%   .IntermediateBearing
-%     .positionOnShaftNode
-%     .positionNode
-%   .RubImpact 
-%     .positionOnShaftNode
-%   .CouplingMisalignment
-%     .positionOnShaftNode
-%   .Custom
-%     .positionOnShaftNode
+%% Output Structure
+% * |Parameter| - Enhanced system configuration with mesh data:
+%   * |Mesh|: Discretization results [struct]
+%     .nodeDistance        % Node positions per shaft [1×nShafts cell]
+%     .Node                % Node properties [nNodes×1 struct]:
+%       .name              % Node ID [integer]
+%       .onShaftNo         % Parent shaft index [integer]
+%       .onShaftDistance   % Axial position [m]
+%       .dof               % DOF count at node [integer]
+%       .diskNo            % Associated disk ID [integer]
+%       .bearingNo         % Associated bearing ID [integer]
+%       .isBearing         % Bearing node flag [logical]
+%       ... (additional component fields as applicable)
+%     .dofInterval        % DOF ranges [nNodes×2]
+%     .dofOnNodeNo         % Node mapping for DOFs [nDOFs×1]
+%     .nodeNum             % Total node count [integer]
+%     .dofNum              % Total DOF count [integer]
+%   * Updated component fields with node mappings:
+%     .Disk.positionOnShaftNode
+%     .Bearing.positionOnShaftNode
+%     .Bearing.positionNode
+%     ... (other components)
 %
-%% Key Features
-% 1. Automatic key node detection from:
-%    - Disk positions
-%    - Bearing locations
-%    - Special components (rub-impact/couplings)
-% 2. Node merging threshold:
-%    Merges nodes closer than L/5000 (L = shaft length)
-% 3. Component-node mapping:
-%    Maintains relationships between nodes and system components
+%% Key Algorithms
+% 1. Key Node Identification:
+%    * Collects critical positions: shaft ends, disks, bearings, etc.
+%    * Implements proximity merging (L/5000 threshold)
+% 2. Mesh Segmentation:
+%    Automatic:
+%      * Uniform segmentation based on gridFineness level
+%    Manual:
+%      * Custom element counts per segment
+% 3. Node-Component Mapping:
+%    * Associates physical components with nearest node
+%    * Handles multi-shaft configurations
+% 4. DOF Management:
+%    * Creates DOF intervals for each node
+%    * Maintains DOF-node relationships
+% 5. Special Component Handling:
+%    * Generates additional nodes for bearing masses
+%    * Flags loose bearing positions
 %
 %% Example
-% % Automatic medium-resolution mesh
+% % Medium-resolution automatic mesh
 % sysConfig = meshModel(baseParams, 'middle');
 %
-% % Custom mesh for 2-shaft system
+% % Custom mesh for dual-shaft system
 % manualGrid = {[3 2 4], [5 1]}; % Shaft1: 3|2|4 elements, Shaft2: 5|1
 % sysConfig = meshModel(baseParams, manualGrid);
 %
-% % Basic mesh with component mapping
+% % Basic analysis mesh
 % sysConfig = meshModel(baseParams);
 %
+%% Implementation Notes
+% * Node Merging Threshold: L/5000 (L = shaft length)
+% * Component Mapping:
+%    - Disks: Point components at nodes
+%    - Bearings: May generate additional mass nodes
+%    - Intermediate Bearings: Special two-column mapping
+% * DOF Allocation:
+%    - Sequential DOF numbering across all nodes
+%    - Maintains DOF interval tracking
+%
 %% See Also
-% judgeShaftEnd, matchElement, establishModel
+% establishModel
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.

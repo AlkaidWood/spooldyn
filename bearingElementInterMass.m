@@ -1,47 +1,78 @@
-%BEARINGELEMENTINTERMASS Generate FEM matrices for mass-bearing elements with multi-DOF
+%% bearingElementInterMass - Generate FEM matrices for mass-bearing elements with multi-DOF
 %
-% Syntax:
-%   [Me, Ke, Ce, Fge] = bearingElementInterMass(AMBearing)
+% This function constructs partitioned FEM matrices for intermediate bearings 
+% with multiple concentrated masses and configurable stiffness/damping chains.
 %
-% Input Arguments:
-%   AMBearing - Mass-bearing configuration structure with fields:
-%       .dofOnShaftNode: [1×2 double]     DOFs count on connected shaft nodes
-%       .dofOfEachNodes: [1×n double]     DOFs per bearing mass node
-%       .mass: [1×n double]               Concentrated masses (m_x, m_y components)
-%       .stiffness: [1×(n+1) double]      Inter-mass stiffness components (horizontal)
-%       .stiffnessVertical: [1×(n+1) double] Vertical stiffness components
-%       .damping: [1×(n+1) double]        Inter-mass damping components (horizontal)
-%       .dampingVertical: [1×(n+1) double] Vertical damping components
+%% Syntax
+%  [Me, Ke, Ce, Fge] = bearingElementInterMass(AMBearing)
 %
-% Output Arguments:
-%   Me - [2×2 cell array]                 Partitioned mass matrix components
-%   Ke - [1×7 cell array]                 Stiffness matrix partitions:
-%       1: Inner shaft, 2,3: Inner-mass coupling
-%       4: Outer shaft, 5,6: Outer-mass coupling 
-%       7: Mass-chain components
-%   Ce - [1×7 cell array]                 Damping matrix partitions (same structure as Ke)
-%   Fge - [n×1 double]                    Gravity force vector for mass nodes
+%% Description
+% |bearingElementInterMass| calculates partitioned mass, stiffness, damping, 
+% and gravity force matrices for intermediate bearings with:
+% * Multiple concentrated masses between shaft segments
+% * Configurable inter-mass stiffness/damping chains
+% * Orthotropic properties in horizontal and vertical directions
+% * Automatic handling of variable DOF configurations
 %
-% Description:
-%   Constructs partitioned FEM matrices for intermediate bearings with:
-%   - Multiple concentrated masses between shaft segments
-%   - Configurable stiffness/damping between mass nodes
-%   - Gravity forces for mass components
-%   Uses chain topology for mass-bearing connections
+%% Input Arguments
+% * |AMBearing| - Bearing configuration structure:
+%   * |dofOnShaftNode|    % DOF counts for connected shaft nodes [1×2 double]
+%   * |dofOfEachNodes|    % DOF counts per bearing mass node [1×n double]
+%   * |mass|              % Concentrated masses [kg] (1×n double of non-zero masses)
+%   * |stiffness|         % Horizontal stiffness components between mass nodes [1×(n+1) double]
+%   * |stiffnessVertical| % Vertical stiffness components [1×(n+1) double]
+%   * |damping|           % Horizontal damping components [1×(n+1) double]
+%   * |dampingVertical|   % Vertical damping components [1×(n+1) double]
 %
-% Notes:
-%   - Automatically handlel mass configurations with different matrix partitions
-%   - Vertical stiffness/damping must match horizontal parameter dimensions
-%   - Mass components must be specified in connection order
+%% Output Arguments
+% * |Me| - Partitioned mass matrix (2×2 cell array):
+%   * |Me{1,1}| - Shaft-shaft mass coupling (always zero)
+%   * |Me{1,2}| - Shaft-mass coupling (always zero)
+%   * |Me{2,1}| - Mass-shaft coupling (always zero)
+%   * |Me{2,2}| - Mass matrix for bearing mass nodes
+% * |Ke| - Partitioned stiffness matrix (1×7 cell array):
+%   * |Ke{1}| - Inner shaft stiffness
+%   * |Ke{2}| - Inner shaft to first mass coupling
+%   * |Ke{3}| - First mass to inner shaft coupling
+%   * |Ke{4}| - Outer shaft stiffness
+%   * |Ke{5}| - Outer shaft to last mass coupling
+%   * |Ke{6}| - Last mass to outer shaft coupling
+%   * |Ke{7}| - Mass chain stiffness (inter-mass connections)
+% * |Ce| - Partitioned damping matrix (1×7 cell array with same structure as Ke)
+% * |Fge| - Gravity force vector for mass nodes [n×1 double]
 %
-% Example:
-% bearingConfig = struct('dofOnShaftNode', [4,4], 'mass', [3.5 2.1],...
-%   'stiffness', [1e6 8e5 7e5], 'damping', [1e3 8e2 7e2],...
-%   'dampingVertical', [1e3 8e2 7e2],...
-%   'stiffnessVertical', [1e6 8e5 7e5], 'dofOfEachNodes', [2,2]);
+%% Matrix Construction Rules
+% 1. Mass handling:
+%   * Non-zero masses are filtered from input
+%   * Masses are placed on diagonal positions in |Me{2,2}|
+% 2. Stiffness/damping chains:
+%   * Components connect sequential mass nodes
+%   * Horizontal/vertical terms remain uncoupled
+%   * Terminal connections linked to shaft nodes
+% 3. Gravity forces:
+%   * Applied to vertical DOF of each mass node
+%   * Magnitude: -9.8 * mass (downward direction)
+%
+%% Dimension Requirements
+% * |mass|, |dofOfEachNodes|, |stiffness|, |damping| must have compatible lengths:
+%   * |n = length(nonzero_mass)|
+%   * |stiffness| and |damping| must have length n+1
+%   * |dofOfEachNodes| must have length ≥ n
+%
+%% Example
+% % Configure intermediate bearing with two masses
+% bearingConfig = struct('dofOnShaftNode', [4,4], ...
+%                       'mass', [3.5, 2.1], ...      % Two non-zero masses
+%                       'stiffness', [1e6, 8e5, 7e5], ... % Three stiffness components
+%                       'damping', [1e3, 8e2, 7e2], ...
+%                       'dampingVertical', [1e3, 8e2, 7e2], ...
+%                       'stiffnessVertical', [1e6, 8e5, 7e5], ...
+%                       'dofOfEachNodes', [2,2]);   % Two mass nodes with 2 DOF each
+% % Generate partitioned matrices
 % [Me, Ke, Ce, Fge] = bearingElementInterMass(bearingConfig);
 %
-% See also BEARINGELEMENTINTER, ADDELEMENTIN
+%% See Also
+% bearingElementInter, addElementIn
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.

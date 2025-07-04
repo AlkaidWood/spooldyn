@@ -1,62 +1,106 @@
-%% PLOTMODEL - Visualize rotor system geometry
-% Generates 3D schematic diagrams of multi-shaft rotor systems with components.
+%% plotModel - Visualize 3D geometry of multi-shaft rotor systems
+%
+% This function generates detailed 3D schematic diagrams of rotor systems,
+% including shafts, disks, bearings, and intermediate bearings with
+% automatic alignment based on system configuration.
 %
 %% Syntax
 %   plotModel(InitialParameter)
 %
 %% Description
-% |PLOTMODEL| creates visualization of rotor system components including:
-% * Shaft geometry with inner/outer radii
-% * Disk positions and dimensions
-% * Bearing locations and housing structures
-% * Intermediate bearing alignment offsets
-%
-% Outputs include:
-% * Individual shaft diagrams (.fig/.png)
-% * Composite system diagram (.fig/.png)
-% * Automatic directory creation ('modelDiagram')
+% |plotModel| creates comprehensive 3D visualizations of rotor systems:
+% * Renders cylindrical shafts with inner/outer diameters
+% * Displays disk geometries at specified positions
+% * Visualizes bearing housings as triangular blocks
+% * Automatically calculates intermediate bearing alignments
+% * Generates both per-shaft and composite system diagrams
 %
 %% Input Arguments
-% *InitialParameter* - System configuration structure containing:
-%   .Shaft              % Shaft properties (struct array)
-%     .totalLength      % [N×1] Axial lengths [m]
-%     .outerRadius      % [N×1] Outer radii [m]
-%     .innerRadius      % [N×1] Inner radii [m]
-%   .Disk               % Disk parameters (struct array)
-%     .inShaftNo        % [M×1] Parent shaft indices
-%     .positionOnShaftDistance % [M×1] Axial positions [m]
-%     .outerRadius      % [M×1] Disk radii [m]
-%     .thickness        % [M×1] Disk thicknesses [m]
-%   .Bearing            % Bearing parameters (struct array)
-%     .inShaftNo        % [K×1] Parent shaft indices
-%     .positionOnShaftDistance % [K×1] Axial positions [m]
-%   .IntermediateBearing % Intermediate bearing parameters (optional)
-%     .betweenShaftNo   % [L×2] Connected shaft indices
-%     .positionOnShaftDistance % [L×2] Connection positions [m]
+% * |InitialParameter| - System configuration structure containing:
+%   * |Shaft|: [1×1 struct]              % Shaft properties
+%     .amount             % Number of shafts [scalar]
+%     .totalLength        % Axial lengths [m] [N×1 vector]
+%     .outerRadius        % Outer radii [m] [N×1 vector]
+%     .innerRadius        % Inner radii [m] [N×1 vector]
+%   * |Disk|: [1×1 struct]               % Disk parameters
+%     .amount             % Number of disks [scalar]
+%     .inShaftNo          % Parent shaft indices [M×1 vector]
+%     .positionOnShaftDistance % Axial positions [m] [M×1 vector]
+%     .outerRadius        % Disk radii [m] [M×1 vector]
+%     .thickness          % Disk thicknesses [m] [M×1 vector]
+%   * |Bearing|: [1×1 struct]            % Bearing parameters
+%     .amount             % Number of bearings [scalar]
+%     .inShaftNo          % Parent shaft indices [K×1 vector]
+%     .positionOnShaftDistance % Axial positions [m] [K×1 vector]
+%   * |IntermediateBearing|: [1×1 struct] % (Optional) Intermediate bearings
+%     .amount             % Number of intermediate bearings [scalar]
+%     .betweenShaftNo     % Connected shaft pairs [L×2 matrix]
+%     .positionOnShaftDistance % Connection positions [m] [L×2 matrix]
 %
 %% Output
-% Generates in './modelDiagram' directory:
-% * diagramOfShaft[n].fig/png    % Individual shaft visualizations
-% * theWholeModel.fig/png         % Composite system diagram
+% Creates in './modelDiagram' directory:
+% * |diagramOfShaft[n].fig|    % Individual shaft diagrams (MATLAB figures)
+% * |diagramOfShaft[n].png|    % Individual shaft images
+% * |theWholeModel.fig|        % Composite system diagram (MATLAB figure)
+% * |theWholeModel.png|        % Composite system image
 %
 %% Visualization Features
-% 1. Cylindrical shaft/disk representations
-% 2. Triangular bearing housing models
-% 3. Automatic intermediate bearing alignment:
-%    - Calculates shaft position offsets
-% 4. Multi-resolution component rendering:
-%    - 20 nodes for shafts
-%    - 30 nodes for disks
-%    - 15 nodes for bearings
+% 1. Component Rendering:
+%    * Shafts: Hollow cylinders with inner/outer diameters
+%    * Disks: Solid cylinders with specified thickness
+%    * Bearings: Triangular housing structures
+% 2. Automatic Alignment:
+%    * Calculates shaft position offsets from intermediate bearings
+%    * Maintains geometric relationships between connected shafts
+% 3. Lighting and Rendering:
+%    * Dual directional lighting (cool/warm tones)
+%    * Gouraud shading for smooth surfaces
+% 4. Resolution Control:
+%    * Shafts: 20 circumferential nodes
+%    * Disks: 30 circumferential nodes
+%    * Bearings: 15 surface nodes
+%
+%% Implementation Details
+% 1. Offset Calculation:
+%    * Computes shaft position adjustments based on intermediate bearings
+%    * Maintains first shaft as reference (offset = 0)
+% 2. Directory Management:
+%    * Creates 'modelDiagram' directory if missing
+%    * Clears previous outputs before generation
+% 3. Visualization Pipeline:
+%    a) Per-shaft figure creation
+%    b) Component-by-component rendering:
+%        - Shaft base cylinder
+%        - Disk cylinders
+%        - Bearing housings
+%    c) Lighting and view configuration
+%    d) Composite figure assembly
+% 4. Composite Diagram:
+%    * Combines all shafts into single visualization
+%    * Preserves component colors and styles
+%    * Enables full system inspection
 %
 %% Example
-% % Generate and view system diagrams
-% sysParams = inputEssentialParameterBO();
-% plotModel(sysParams);
+% % Configure and visualize rotor system
+% rotorParams = inputEssentialParameter(); % Load system parameters
+% plotModel(rotorParams);                   % Generate diagrams
+% % View composite diagram
 % winopen('modelDiagram/theWholeModel.png');
 %
+%% Component Rendering Notes
+% * Shaft Dimensions:
+%    Outer radius: Shaft.outerRadius
+%    Inner radius: Shaft.innerRadius (for hollow shafts)
+% * Disk Scaling:
+%    Thickness: Disk.thickness
+%    Radius: Disk.outerRadius
+% * Bearing Housing:
+%    Height: max(diskRadius×1.25, shaftRadius×2.5)
+%    Width: Same as height
+%    Thickness: min(diskThickness)×0.6
+%
 %% See Also
-% addCylinder, addTriangularBlock, CombFigs
+% addCylinder, addTriangularBlock, CombFigs, inputEssentialParameterBO
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.

@@ -1,75 +1,150 @@
-%SIGNALPROCESSING Post-process rotor system response data and generate visualizations
+%% signalProcessing - Post-process rotor system response data and generate visualizations
 %
-% Syntax:
+% This function performs comprehensive post-processing of rotor system dynamic 
+% response data, generating publication-quality visualizations for transient 
+% and steady-state analysis of multi-shaft systems.
+%
+%% Syntax
 %   signalProcessing(q, dq, t, Parameter, SwitchFigure)
 %   signalProcessing(q, dq, t, Parameter, SwitchFigure, tSpan)
 %   signalProcessing(q, dq, t, Parameter, SwitchFigure, tSpan, samplingFrequency, NameValueArgs)
 %
-% Input Arguments:
-%   q - [n×m double]                 Displacement time history (DOFs × time)
-%   dq - [n×m double]                Velocity time history
-%   t - [1×m double]                 Time vector (seconds)
-%   Parameter - System configuration structure containing:
-%       .Mesh: [1×1 struct]          Discretization data with:
-%           .nodeNum: integer         Total number of nodes
-%           .dofOnNodeNo: integer     DOF indices per node
-%       .Status: [1×1 struct]        Operational parameters:
-%           .vmax: double            Maximum rotational speed (rad/s)
-%   SwitchFigure - [1×1 struct]      Visualization control flags:
-%       .displacement: logical       Enable displacement plots
-%       .axisTrajectory: logical     Enable 2D axis trajectory plots
-%       .phase: logical             Enable phase portraits
-%       .fftSteady: logical         Enable steady-state FFT
-%       .fftTransient: logical      Enable transient FFT
-%       .poincare: logical          Enable Poincaré maps
-%       .saveFig: logical           Save .fig files
-%       .saveEps: logical           Save .eps files
-%       .axisTrajectory3d: logical  Enable 3D shaft trajectories
-%       .poincare_phase: logical    Enable phase+Poincaré composite plots
-%   tSpan - [1×2 double]             Processing time range [start, end] (seconds)
-%   samplingFrequency - double      Original sampling frequency (Hz)
-%   NameValueArgs - Optional parameters:
-%       .fftXlim: double            Maximum FFT frequency display (default: 500Hz)
-%       .T_window: double           STFT window duration (default: (tSpan(2)-tSpan(1))/20s)
-%       .overlap: double            STFT window overlap ratio (default: 2/3)
-%       .fftisPlot3DTransient: logical 3D transient FFT visualization
-%       .fftSteadyLog: logical      Logarithmic FFT amplitude scale
-%       .reduceInterval: integer    Data downsampling factor
-%       .isPlotInA4: logical        A4 paper formatting
-%       .f: [1×k double]            Custom frequency vector for STFT
+%% Input Arguments
+% * |q| - Displacement time history [n×m double]:
+%   * n: Number of degrees of freedom (DOFs)
+%   * m: Number of time samples
+% * |dq| - Velocity time history [n×m double]
+% * |t| - Time vector [1×m double]:
+%   * Time points corresponding to q and dq (seconds)
+% * |Parameter| - System configuration structure containing:
+%   * |Mesh|: Discretization data
+%     .nodeNum: Total node count
+%     .dofOnNodeNo: DOF indices per node
+%     .Node: Node properties array
+%   * |Status|: Operational parameters
+%     .vmax: Maximum rotational speed (rad/s)
+% * |SwitchFigure| - Visualization control flags [struct]:
+%   * |displacement|: Displacement time plots
+%   * |axisTrajectory|: 2D shaft trajectory plots
+%   * |phase|: Phase portraits
+%   * |fftSteady|: Steady-state FFT
+%   * |fftTransient|: Transient FFT/spectrogram
+%   * |poincare|: Poincaré sections
+%   * |saveFig|: Save .fig files
+%   * |saveEps|: Save .eps files
+%   * |axisTrajectory3d|: 3D shaft trajectories
+%   * |poincare_phase|: Phase+Poincaré composite plots
+% * |tSpan| - (Optional) Processing time range [1×2 double]:
+%   * [start_time, end_time] in seconds
+%   * Default: Full time range
+% * |samplingFrequency| - (Optional) Original sampling rate [Hz]:
+%   * Required for FFT visualizations
+% * |NameValueArgs| - (Optional) Processing parameters [name-value pairs]:
+%   * |fftXlim|: FFT frequency display limit (default: 500 Hz)
+%   * |T_window|: STFT window duration (default: (tSpan(2)-tSpan(1))/20 s)
+%   * |overlap|: STFT window overlap ratio (default: 2/3)
+%   * |fftisPlot3DTransient|: 3D transient FFT visualization
+%   * |fftSteadyLog|: Logarithmic FFT amplitude scale
+%   * |reduceInterval|: Data downsampling factor
+%   * |isPlotInA4|: A4 paper formatting
+%   * |f|: Custom frequency vector for STFT
 %
-% Description:
-%   Performs comprehensive post-processing of rotor system dynamics data:
-%   - Generates time-domain plots: displacement histories, velocity profiles
-%   - Creates phase space visualizations: 2D/3D trajectories, Poincaré sections
-%   - Conducts spectral analysis: steady-state/transient FFT, STFT spectrograms
-%   - Supports multi-shaft systems with interactive 3D trajectory visualization
-%   - Implements advanced signal processing techniques:
-%       * Short-Time Fourier Transform (STFT) with customizable windows
-%       * Automated Poincaré section extraction at rotational periods
-%       * Multi-resolution analysis through data downsampling
+%% Description
+% |signalProcessing| provides comprehensive visualization capabilities for 
+% rotor system dynamics analysis:
+% * Time-domain analysis: Displacement histories, velocity profiles
+% * Phase space visualization: 2D/3D trajectories, Poincaré sections
+% * Frequency-domain analysis: Steady-state FFT, STFT spectrograms
+% * Multi-shaft support: Shaft-specific trajectory visualizations
+% * Automated output management: Directory creation, file saving
 %
-% Features:
-%   - Automated directory management for output organization
-%   - Intelligent DOF labeling for bearings and shaft components
-%   - Adaptive unit handling (meters/radians) based on DOF type
-%   - Publication-quality figure formatting with LaTeX-style annotations
-%   - Multi-format output support (.fig, .png, .eps)
+%% Visualization Capabilities
+% 1. Displacement Time History:
+%    * Plots displacement vs. time for each DOF
+%    * Automatic unit selection (m/rad) based on DOF type
+% 2. Axis Trajectory:
+%    * 2D: Cross-sectional shaft orbits
+%    * 3D: Spatial shaft deformation along length
+% 3. Phase Portraits:
+%    * Velocity vs. displacement for each DOF
+% 4. Spectral Analysis:
+%    * Steady-state FFT: Frequency content of full signal
+%    * Transient FFT: STFT spectrograms for time-frequency analysis
+% 5. Poincaré Sections:
+%    * State-space intersections at rotational periods
+%    * Multi-shaft synchronization
+% 6. Composite Plots:
+%    * Phase portraits with Poincaré sections
 %
-% Examples:
-%   % Basic usage with default visualization parameters
-%   load simulationData.mat
-%   Switch = struct('displacement',true, 'fftSteady',true);
-%   signalProcessing(q, dq, t, sysParams, Switch);
+%% Implementation Features
+% 1. Intelligent DOF Handling:
+%    * Automatic DOF labeling (Node-X-DOF-Y)
+%    * Unit adaptation based on DOF type (translation/rotation)
+% 2. Adaptive Processing:
+%    * Time-range selection (tSpan)
+%    * Data downsampling (reduceInterval)
+% 3. Advanced Signal Processing:
+%    * Short-Time Fourier Transform (STFT) with customizable windows
+%    * Automated Poincaré section extraction at rotational periods
+%    * Multi-resolution analysis
+% 4. Publication-Quality Output:
+%    * LaTeX-style annotations
+%    * A4 paper formatting option
+%    * Multi-format export (.fig, .eps, .png)
 %
-%   % Advanced transient analysis with custom STFT parameters
-%   signalProcessing(q, dq, t, sysParams, Switch, [1 5], 2000, ...
-%       'T_window', 0.2, 'overlap', 0.75, 'fftXlim', 1000);
+%% Examples
+% % Basic usage with displacement and FFT plots
+% SwitchFig = struct('displacement', true, 'fftSteady', true);
+% signalProcessing(q, dq, t, sysParams, SwitchFig);
 %
-% See also CALCULATERESPONSE, SPECTROGRAM, PLOT2DSTANDARD, SAVEFIGURE
+% % Transient analysis with custom STFT parameters
+% signalProcessing(q, dq, t, sysParams, SwitchFig, [1 5], 2000, ...
+%     'T_window', 0.2, 'overlap', 0.75, 'fftXlim', 1000);
+%
+% % Full 3D visualization suite
+% SwitchFig = struct('axisTrajectory3d', true, 'poincare_phase', true);
+% signalProcessing(q, dq, t, sysParams, SwitchFig);
+%
+%% Directory Structure
+% Creates and manages the following output directories:
+%   signalProcess/
+%   ├── displacement/
+%   ├── axisTrajectory/
+%   ├── phase/
+%   ├── fftSteady/
+%   ├── fftTransient/
+%   ├── poincare/
+%   ├── axisTrajectory3d/
+%   └── poincare_phase/
+%
+%% Algorithm Details
+% 1. Time Range Selection:
+%    * Automatically clips data to tSpan range
+% 2. Poincaré Section Extraction:
+%    * Uses |get_tk_from_simulation2| to find rotational periods
+%    * Interpolates state variables at period boundaries
+% 3. STFT Implementation:
+%    * Uses MATLAB's |spectrogram| function
+%    * Customizable window size and overlap
+% 4. 3D Trajectory Reconstruction:
+%    * Spatial mapping along shaft length
+%
+%% Application Notes
+% 1. FFT Requirements:
+%    * samplingFrequency must be provided for spectral analysis
+% 2. Large Dataset Handling:
+%    * Use reduceInterval for downsampling
+%    * Select specific tSpan ranges
+% 3. Publication Figures:
+%    * Enable isPlotInA4 for standardized formatting
+%    * Use saveEps for vector graphics
+%
+%% See Also
+% get_tk_from_simulation2, spectrogram, plot2DStandard, fft
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function signalProcessing(q, dq, t, Parameter, tSpan, samplingFrequency, SwitchFigure, NameValueArgs)
@@ -604,7 +679,6 @@ end
 pngName = [figureName, '.png'];
 print(figHandle, pngName, '-dpng', '-r400');
 
-%saveas(figHandle, pngName) 
 end % end subFunciton
 
 end % end function

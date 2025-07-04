@@ -1,49 +1,109 @@
-%GENERATEHERTZIANFORCE Create Hertzian contact force calculation function
+%% generateHertzianForce - Generate Hertzian contact force calculation function
 %
-% Syntax:
-%   generateHertzianForce(Mesh, ComponentSwitch, Shaft, Bearing)
-%   generateHertzianForce(Mesh, ComponentSwitch, Shaft, Bearing, InterBearing)
+% This function creates a MATLAB function file (hertzianForce.m) that 
+% computes the nonlinear Hertzian contact forces in bearing components 
+% for rotor dynamics simulations.
 %
-% Input Arguments:
-%   Mesh - Discretization structure containing:
-%       .dofNum: integer                Total number of DOFs
-%       .dofInterval: [n×2 double]      DOF ranges for nodes
-%   ComponentSwitch - Component activation structure with:
-%       .hasIntermediateBearing: logical  Intermediate bearing flag
-%   Shaft - Shaft configuration structure with:
-%       .amount: integer                Number of shafts
-%   Bearing - Main bearing parameters structure with:
-%       .isHertzian: logical vector     Hertzian contact activation flags
-%       .inShaftNo: integer vector      Connected shaft indices
-%       .positionOnShaftNode: integer matrix  Node positions on shafts
-%       .radiusInnerRace: double vector  Inner race radii
-%       .radiusOuterRace: double vector  Outer race radii
-%       .rollerNum: integer vector       Roller counts
-%       .clearance: double vector        Initial clearances
-%       .contactStiffness: double vector Hertz stiffness coefficients
-%       .coefficient: double vector     Force exponents
-%   InterBearing - (Optional) Intermediate bearing parameters with:
-%       .isHertzian: logical vector     Hertzian contact flags
-%       .innerShaftNo: integer vector   Inner shaft indices
-%       .betweenShaftNo: integer matrix Connected shaft pairs
-%       .positionNode: integer matrix   Node positions
+%% Syntax
+%  generateHertzianForce(Mesh, ComponentSwitch, Shaft, Bearing)
+%  generateHertzianForce(Mesh, ComponentSwitch, Shaft, Bearing, InterBearing)
 %
-% Description:
-%   Generates hertzianForce.m file containing bearing contact force calculations:
-%   - Processes both main and intermediate bearings
-%   - Configures DOF mappings for shaft connections
-%   - Implements speed-dependent contact force equations
-%   - Handles ground-connected and shaft-connected bearing configurations
+%% Description
+% |generateHertzianForce| constructs a function to calculate bearing contact 
+% forces using Hertzian theory. The generated function:
+% * Handles both main and intermediate bearings
+% * Supports ground-connected and shaft-connected configurations
+% * Implements speed-dependent force calculations
+% * Accounts for bearing geometry and material properties
 %
-% Notes:
-%   - Overwrites existing hertzianForce.m file
-%   - Requires companion function hertzianForceEq for force calculations
-%   - Automatic DOF adaptation for ground-connected bearings
+%% Input Arguments
+% * |Mesh| - Discretization structure with fields:
+%   * |dofNum|: Total DOFs in system [scalar]
+%   * |dofInterval|: DOF ranges per node [n×2 matrix]
+%   * |Node|: Node properties array [struct]
 %
-% See also HERTZIANFORCEEQ, BEARINGLOOSINGFORCE, GENERATEDYNAMICEQUATION
+% * |ComponentSwitch| - Component activation structure with:
+%   * |hasIntermediateBearing|: Intermediate bearing flag [logical]
+%
+% * |Shaft| - Shaft configuration with:
+%   * |amount|: Number of shafts [scalar]
+%
+% * |Bearing| - Main bearing parameters with:
+%   * |isHertzian|: Hertzian activation flags [logical vector]
+%   * |inShaftNo|: Connected shaft indices [integer vector]
+%   * |positionOnShaftNode|: Node positions [integer matrix]
+%   * |radiusInnerRace|: Inner race radii [m] [double vector]
+%   * |radiusOuterRace|: Outer race radii [m] [double vector]
+%   * |rollerNum|: Roller counts [integer vector]
+%   * |clearance|: Initial clearances [m] [double vector]
+%   * |contactStiffness|: Hertz stiffness [N/m] [double vector]
+%   * |coefficient|: Force exponents [double vector]
+%
+% * |InterBearing| - (Optional) Intermediate bearing parameters with:
+%   * |isHertzian|: Hertzian activation flags [logical vector]
+%   * |innerShaftNo|: Inner shaft indices [integer vector]
+%   * |betweenShaftNo|: Connected shaft pairs [integer matrix]
+%   * |positionNode|: Node positions [integer matrix]
+%   * ... (additional fields mirroring Bearing structure)
+%
+%% Generated Function (hertzianForce.m)
+% Function Signature:
+%   fHertz = hertzianForce(qn, tn, domega)
+% * Inputs:
+%   - |qn|: Displacement vector [n×1]
+%   - |tn|: Current time [s]
+%   - |domega|: Rotational speeds [rad/s] [vector]
+% * Output:
+%   - |fHertz|: Hertzian contact force vector [n×1]
+%
+%% Key Features
+% 1. Geometry Handling:
+%   * Processes inner/outer race radii
+%   * Accounts for roller counts
+% 2. Material Modeling:
+%   * Uses specified contact stiffness
+%   * Implements nonlinear force exponent
+% 3. Speed Effects:
+%   * Incorporates rotational speed dependencies
+%   * Uses relative velocity components
+% 4. Adaptive DOF:
+%   * Automatically handles ground connections
+%   * Manages multi-shaft configurations
+%
+%% Implementation Notes
+% 1. Parameter Collection:
+%   * Compiles bearing geometry parameters
+%   * Maps force components to DOFs
+%   * Distinguishes between bearing types
+% 2. File Generation:
+%   * Creates a complete MATLAB function
+%   * Overwrites existing hertzianForce.m
+%   * Uses temporary .txt file during creation
+% 3. Contact Modeling:
+%   * Relies on companion function hertzianForceEq
+%   * Calculates relative displacements
+%   * Applies correct force directions
+%
+%% Example
+% % Generate Hertzian force function for standard bearings (After modeling)
+% generateHertzianForce(Parameter.Mesh, Parameter.ComponentSwitch, Parameter.Shaft, Parameter.Bearing);
+%
+% % Generate with intermediate bearings
+% generateHertzianForce(Parameter.Mesh, Parameter.ComponentSwitch, Parameter.Shaft, Parameter.Bearing, Parameter.IntermediateBearing);
+%
+% % Usage in simulation:
+% hertzForce = hertzianForce(q_current, t_current, shaftSpeeds);
+%
+%% Dependencies
+% * Requires hertzianForceEq for actual force calculations
+% * Depends on system discretization from meshModel
+%
+%% See Also
+% hertzianForceEq, generateDynamicEquation, bearingElement
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function generateHertzianForce(varargin)
 %% input

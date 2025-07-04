@@ -1,51 +1,88 @@
-%% DISKELEMENT - Generate element matrices for disk components
-% Computes mass, gyroscopic, and N-matrix matrices with gravity vector and
-% eccentricity for individual disk elements in rotor dynamics analysis.
+%% diskElement - Generate FEM matrices for disk components in rotor dynamics
+%
+% This function computes mass, gyroscopic, and transient matrices along with 
+% gravity and eccentricity force vectors for disk elements in rotor systems.
 %
 %% Syntax
-%   [Me, Ge, Ne, Fge, Ee] = diskElement(ADisk)
+%  [Me, Ge, Ne, Fge, Ee] = diskElement(ADisk)
 %
 %% Description
-% |DISKELEMENT| calculates FEM component matrices for disk elements using:
-% * Thin disk approximation
-% * Rotational inertia effects
-% * Mass unbalance consideration
+% |diskElement| calculates finite element matrices for disk components 
+% using thin disk approximation. The function:
+% * Computes disk mass and inertia properties
+% * Constructs mass and gyroscopic matrices
+% * Generates gravity and eccentricity force vectors
+% * Supports mass unbalance modeling
 %
 %% Input Arguments
-% *ADisk* - Disk properties structure:
-%   .dofOfEachNodes    % DOF count at mounting node (scalar)
-%   .outerRadius       % Disk outer radius [m]
-%   .innerRadius       % Disk inner radius [m]
-%   .density           % Material density [kg/m³]
-%   .thickness         % Axial thickness [m]
-%   .eccentricity      % Mass eccentricity [m]
+% * |ADisk| - Disk properties structure:
+%   * |dofOfEachNodes|    % DOF count at mounting node (scalar)
+%   * |outerRadius|       % Outer radius [m]
+%   * |innerRadius|       % Inner radius [m]
+%   * |density|           % Material density [kg/m³]
+%   * |thickness|         % Axial thickness [m]
+%   * |eccentricity|      % Mass eccentricity [m]
 %
 %% Output Arguments
-% *Me*     % Element mass matrix (4×4)
-% *Ge*     % Element gyroscopic matrix (4×4)
-% *Ne*     % Nonlinear matrix (4×4)
-% *Fge*    % Gravity force vector (4×1)
-% *Ee*     % Eccentricity force component [N×1]
+% * |Me|  - Mass matrix (4×4) combining translational and rotational inertia
+% * |Ge|  - Gyroscopic matrix (4×4) accounting for polar inertia effects
+% * |Ne|  - Transient matrix (4×4) for taking into account transient
+%           dynamic behavior
+% * |Fge| - Gravity force vector (4×1) [N]
+% * |Ee|  - Eccentricity force magnitude [N]
 %
-%% Formulation
+%% Physical Formulation
 % 1. Mass Calculation:
 %    $ m = \pi \rho t (r_o^2 - r_i^2) $
 % 2. Inertia Terms:
-%    $ I_d = \frac{1}{4}m(r_o^2 + r_i^2) $ (Diametral)
-%    $ I_p = \frac{1}{2}m(r_o^2 + r_i^2) $ (Polar)
+%    $ I_d = \frac{1}{12}m(3(r_o^2 + r_i^2) + t^2) $ (Diametral inertia)
+%    $ I_p = \frac{1}{2}m(r_o^2 + r_i^2) $ (Polar inertia)
 % 3. Matrix Construction:
-%    - Mass matrix combines translational (MT) and rotational (MR) terms
-%    - Gyroscopic matrix accounts for polar inertia effects
+%    * Mass matrix: Combines translational (MT) and rotational (MR) terms
+%    * Gyroscopic matrix: Based on polar inertia
+%
+%% Matrix Structures
+% 1. Mass Matrix (Me):
+%    $ Me = \begin{bmatrix}
+%        m & 0 & 0 & 0 \\
+%        0 & m & 0 & 0 \\
+%        0 & 0 & I_d & 0 \\
+%        0 & 0 & 0 & I_d
+%    \end{bmatrix} $
+%
+% 2. Gyroscopic Matrix (Ge):
+%    $ Ge = \begin{bmatrix}
+%        0 & 0 & 0 & 0 \\
+%        0 & 0 & 0 & 0 \\
+%        0 & 0 & 0 & -I_p \\
+%        0 & 0 & I_p & 0
+%    \end{bmatrix} $
+%
+% 3. Gravity Vector (Fge):
+%    $ Fge = \begin{bmatrix} 0 \\ -mg \\ 0 \\ 0 \end{bmatrix} $
+%
+% 4. Eccentricity Force (Ee):
+%    $ Ee = m \cdot e $
+%
+%% Implementation Notes
+% * Uses thin disk approximation (axial thickness << diameter)
+% * Accounts for both diametral and polar inertia effects
+% * Gravity acts in negative Y-direction (vertical downward)
+% * Eccentricity modeled as static unbalance force
 %
 %% Example
-% % Create disk parameters
-% diskProps = struct('outerRadius', 0.1, 'innerRadius', 0.05, ...
-%                    'density', 7850, 'thickness', 0.02, ...
-%                    'eccentricity', 1e-4);
-% [Me, Ge] = diskElement(diskProps);
+% % Configure disk parameters
+% diskCfg = struct('dofOfEachNodes', 4, ...
+%                  'outerRadius', 0.15, ...
+%                  'innerRadius', 0.05, ...
+%                  'density', 7850, ...
+%                  'thickness', 0.025, ...
+%                  'eccentricity', 0.0001);
+% % Generate disk element matrices
+% [Me, Ge, ~, Fg, Ecc] = diskElement(diskCfg);
 %
 %% See Also
-% femDisk, shaftElement, assembleLinear
+% shaftElement, bearingElement, assembleGlobalMatrix
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.

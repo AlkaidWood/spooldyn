@@ -1,11 +1,84 @@
-%% generateBearingLoosingForce
-% generate a 'bearingLoosingForce.m' file
-%% Syntax
-% generateBearingLoosingForce(LoosingBearing)
-%% Description
-% LoosingBearing: is a struct saving the relevant data
+%% generateBearingLoosingForce - Generate bearing loosening force function
 %
-% generate a bearingLoosingForce.m file in the root directory
+% This function creates a MATLAB function file (bearingLoosingForce.m) that 
+% implements stiffness and damping switching logic for bearings with clearance 
+% faults in rotor dynamics simulations.
+%
+%% Syntax
+%  generateBearingLoosingForce(LoosingBearing, Mesh)
+%
+%% Description
+% |generateBearingLoosingForce| constructs a condition-based switching function 
+% for bearing stiffness and damping matrices during clearance faults. The 
+% generated function:
+% * Monitors specific DOF for clearance threshold violations
+% * Switches between normal and loosened bearing matrices
+% * Automatically detects bearing locations from mesh data
+%
+%% Input Arguments
+% * |LoosingBearing| - Bearing loosening configuration structure:
+%   * |loosingPositionNo| % Position index in bearing chain (scalar)
+%   * |interval|          % Clearance threshold [m] (scalar)
+%
+% * |Mesh| - System discretization structure with fields:
+%   * |Node|: [1×N struct] Node properties array
+%     .name              % Node identifier
+%     .isBearing         % Bearing node flag (logical)
+%     .isLoosingBearing  % Loosening bearing flag (logical)
+%   * |dofInterval|: [N×2] DOF ranges per node
+%   * |nodeNum|          % Total node count (scalar)
+%
+%% Generated Function (bearingLoosingForce.m)
+% Function Signature:
+%   [K, C] = bearingLoosingForce(qn, Matrix)
+% * Inputs:
+%   - |qn|: Current displacement vector
+%   - |Matrix|: System matrix structure
+% * Outputs:
+%   - |K|: Updated stiffness matrix
+%   - |C|: Updated damping matrix
+%
+%% Switching Logic
+% The generated function implements:
+%   if qn(loosingDof) ∈ [0, interval]
+%       K = Matrix.stiffnessLoosing
+%       C = Matrix.dampingLoosing
+%   else
+%       K = Matrix.stiffness
+%       C = Matrix.damping
+%   end
+%
+%% Position Handling
+% * |loosingPositionNo = 1|:
+%   - Monitors shaft-connected node (bearing outer ring)
+% * |loosingPositionNo > 1|:
+%   - Monitors specified mass node in bearing chain
+%
+%% Implementation Notes
+% 1. Node Identification:
+%   * Automatically locates bearing nodes from mesh data
+%   * Determines monitoring DOF based on |loosingPositionNo|
+% 2. File Management:
+%   * Overwrites existing bearingLoosingForce.m
+%   * Creates temporary .txt file during generation
+% 3. Threshold Handling:
+%   * Uses unilateral clearance check (qn ≥ 0 and qn ≤ interval)
+%
+%% Example
+% % Configure bearing loosening parameters
+% looseCfg = struct('loosingPositionNo', 2, 'interval', 0.0001);
+% % Generate switching function (After modeling)
+% generateBearingLoosingForce(looseCfg, Parameter.Mesh);
+%
+%% Dependencies
+% Requires complete mesh data from |meshModel|
+%
+%% See Also
+% generateDynamicEquation, bearingElement, meshModel
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 function generateBearingLoosingForce(LoosingBearing, Mesh)

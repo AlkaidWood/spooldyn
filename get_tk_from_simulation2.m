@@ -1,4 +1,111 @@
-
+%% get_tk_from_simulation2 - Calculate rotation period timestamps from system parameters
+%
+% This function computes the time points (tk) corresponding to each full revolution 
+% of multi-shaft rotating systems based on operational status parameters and time data. 
+% It generates rotational phase profiles and identifies revolution timestamps.
+%
+%% Syntax
+%  tk = get_tk_from_simulation2(Status, time, shaftNum)
+%  tk = get_tk_from_simulation2(Status, time, shaftNum, NameValues)
+%
+%% Description
+% |get_tk_from_simulation2| calculates revolution completion times for:
+% * Constant speed operation
+% * Accelerating/decelerating systems
+% * Custom speed profiles
+% * Multi-shaft systems with speed ratios
+% It:
+% * Validates system status parameters
+% * Generates rotational phase profiles
+% * Computes revolution timestamps
+% * Filters low-speed regions
+%
+%% Input Arguments
+% * |Status| - System operational status structure with fields:
+%   * |ratio|: [n×1] Shaft speed ratios (n = shaftNum-1)
+%   * |vmax|: Maximum rotational speed [rad/s] [scalar]
+%   * |acceleration|: Rotational acceleration [rad/s²] [scalar]
+%   * |duration|: Duration of constant speed phase [s] [scalar]
+%   * |isDeceleration|: Deceleration flag [logical] [scalar]
+%   * |vmin|: Minimum rotational speed [rad/s] [scalar]
+%   * |isUseCustomize|: Custom profile flag [logical] [scalar]
+%   * |customize|: Custom speed function handle (if applicable)
+%
+% * |time| - Time vector [1×m]:
+%   * Must be monotonically increasing
+%   * Covers the full operational range
+%
+% * |shaftNum| - Number of shafts [integer]:
+%   * Default: 1
+%
+%% Name-Value Pair Arguments
+% * |'is_delete_low_speed_points'| - Low-speed filter flag [logical]:
+%   * |false|: Keep all points (default)
+%   * |true|: Remove start/end low-speed regions
+% * |'low_speed_threshold'| - Rotation speed threshold [rad/s]:
+%   * Default: 2π rad/s (1 rev/s)
+%
+%% Output Arguments
+% * |tk| - Revolution timestamps [cell array]:
+%   * Size: shaftNum × 1
+%   * Elements: Timestamps for each revolution (1 × rev_count vectors)
+%
+%% Algorithm
+% 1. Parameter Validation:
+%   * Checks required status fields
+%   * Verifies time vector properties
+% 2. Phase Calculation:
+%   Standard operation:
+%     ωₛ(t) = rotationalStatus(t, vmax×ratioₛ, duration, accel×ratioₛ, 
+%                             decel_flag, vmin×ratioₛ)
+%   Custom operation:
+%     [~, ~, ωₛ(t)] = Status.customize(t)
+% 3. Timestamp Calculation:
+%   tkₛ = get_tk_from_simulation(ωₛ, time, filtering_params)
+%
+%% Physical Interpretation
+% * |tk|: Revolution completion times for each shaft
+% * Speed ratios: ω_shaftₖ = ω_ref × ratioₖ
+% * Phase accumulation: ω(t) = ∫α(t)dt
+%
+%% Implementation Notes
+% * Validation:
+%   * Enforces 10 required status fields
+%   * Checks time vector monotonicity
+% * Phase Generation:
+%   * Uses |rotationalStatus| for standard profiles
+%   * Supports custom functions via handle
+% * Ratio Handling:
+%   * First shaft always has ratio = 1
+%   * Additional ratios applied to derived shafts
+%
+%% Example
+% % Configure status parameters for dual-shaft system
+% Status = struct('vmax', 20*pi, 'acceleration', pi, 'duration', 5, ...
+%                'isDeceleration', true, 'vmin', 5*pi, 'ratio', 1.5, ...
+%                'isUseCustomize', false, 'customize', []);
+% time = 0:0.01:20; % Time vector
+% 
+% % Calculate revolution timestamps
+% tk = get_tk_from_simulation2(Status, time, 2);
+%
+% % With custom profile and filtering
+% Status.isUseCustomize = true;
+% Status.customize = @(t) calculateStatus(t);
+% tk_filt = get_tk_from_simulation2(Status, time, 2, ...
+%     'is_delete_low_speed_points', true, ...
+%     'low_speed_threshold', 5*pi); % 2.5 rev/s threshold
+%
+%% Dependencies
+% * |rotationalStatus|: Standard speed profile generation
+% * |get_tk_from_simulation|: Core timestamp calculation
+%
+%% See Also
+% get_tk_from_simulation, rotationalStatus, diff
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 function tk = get_tk_from_simulation2(Status, time, shaftNum, NameValue)
 
 arguments

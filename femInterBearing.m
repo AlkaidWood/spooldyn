@@ -1,54 +1,102 @@
-%FEMINTERBEARING Generate FEM matrices for intermediate bearings with/without mass
+%% femInterBearing - Generate FEM matrices for inter-shaft bearings
 %
-% Syntax:
-%   [M, K, C, Fg] = femInterBearing(InterBearing, nodeDof)
+% This function assembles global mass, stiffness, and damping matrices 
+% along with gravity force vectors for intermediate bearings in rotor 
+% systems, supporting both massless and mass-bearing configurations.
 %
-% Input Arguments:
-%   InterBearing - Intermediate bearing parameters structure with fields:
-%       .positionOnShaftNode: [n×2 double] Node positions connected to shaft (start and end)
-%       .positionNode: [n×2 double]       Node positions for mass bearings (if applicable)
-%       ... see also inputIntermediateBearing()
-%   nodeDof - [m×1 double]               Number of DOFs per node in global system
+%% Syntax
+%  [M, K, C, Fg] = femInterBearing(InterBearing, nodeDof)
 %
-% Output Arguments:
-%   M - [n×n sparse]                     Global mass matrix
-%   K - [n×n sparse]                     Global stiffness matrix
-%   C - [n×n sparse]                     Global damping matrix
-%   Fg - [n×1 double]                    Gravity force vector
+%% Description
+% |femInterBearing| constructs finite element matrices for intermediate 
+% bearings connecting two shaft segments. The function:
+% * Handles both massless and mass-containing bearings
+% * Supports complex bearing topologies with multiple mass nodes
+% * Generates partitioned matrices for global assembly
+% * Computes gravity forces for mass-bearing components
 %
-% Description:
-%   Constructs global FEM matrices for intermediate bearings considering:
-%   - Bearings without mass (connects shaft nodes)
-%   - Bearings with concentrated mass (additional node connections)
-%   Automatically handles matrix assembly for different bearing types
+%% Input Arguments
+% * |InterBearing| - Intermediate bearing properties structure:
+%   * |amount|              % Number of bearings (scalar)
+%   * |dofOfEachNodes|      % DOF per bearing node [n×1 vector]
+%   * |stiffness|           % Horizontal stiffness [N/m] [n×m matrix]
+%   * |stiffnessVertical|   % Vertical stiffness [N/m] [n×m matrix]
+%   * |damping|             % Horizontal damping [N·s/m] [n×m matrix]
+%   * |dampingVertical|     % Vertical damping [N·s/m] [n×m matrix]
+%   * |mass|                % Concentrated masses [kg] [n×m matrix]
+%   * |positionOnShaftNode| % Connected shaft node indices [n×2 matrix]
+%   * |positionNode|        % Mass node indices [n×2 matrix]
+%   * n: Number of intermediate bearings
+%   * m: Maximum number of mass blocks per bearing
 %
-% Notes:
-%   - Throws error if non-mass bearings receive multiple stiffness/damping values
-%   - Uses local coordinate transformation for bearing elements
+% * |nodeDof| - DOF counts per system node [p×1 vector], p = number of nodes
 %
-% Example:
-%   % generate global matrix of Inter-shaft Bearing part
-%   % structure looks like: 
-%   % Node-1 -- k=1e6 c=300 -- mass=0.5 Node-7 -- k=1e6 c=200 -- Node-3
-%   % Node-2 -- k=1e6 c=300 -- mass=1 Node-8 -- k=1e6 c=200 -- Node-6
-%   Interbearing.amount = 2; % two inter-shaft bearing
-%   Interbearing.dofOfEachNodes = [2; 2]; % bearings have mass and  node
-%   Interbearing.isHertzian = [false; false]; % ignore Herzian contact
-%   Interbearing.isHertzianTop = [false; false];
-%   Interbearing.stiffness = [1e6, 1e6; 1e7, 1e7];
-%   Interbearing.stiffnessVertical = [1e6, 1e6; 1e7, 1e7];
-%   Interbearing.damping = [300, 200; 400, 500];
-%   Interbearing.dampingVertical = [300, 200; 400, 500];
-%   Interbearing.mass = [0.5; 1];
-%   Interbearing.positionOnShaftNode = [1, 3; 2, 6];
-%   Interbearing.positionNode = [7; 8];
-%   nodeDof = [4,4,4,4,4,4,2,2];
-%   [M, K, C, Fg] = femInterBearing(Interbearing, nodeDof);
+%% Output Arguments
+% * |M|  % Global mass matrix [sparse q×q]
+% * |K|  % Global stiffness matrix [sparse q×q]
+% * |C|  % Global damping matrix [sparse q×q]
+% * |Fg| % Gravity force vector [q×1]
+%   * q: Total DOF of rotor system = sum(nodeDof)
 %
-% See also BEARINGELEMENTINTER, BEARINGELEMENTINTERMASS
+%% Matrix Assembly Algorithm
+% 1. Bearing Classification:
+%   * Massless bearings (sum(mass)==0)
+%   * Mass bearings (sum(mass)≠0)
+% 2. Massless Bearing Processing:
+%   * Validates single stiffness/damping input
+%   * Generates elements via |bearingElementInter|
+%   * Assembles to shaft connection points
+% 3. Mass Bearing Processing:
+%   * Generates matrices via |bearingElementInterMass|
+%   * Handles multi-node connectivity
+%   * Adds gravity forces to mass nodes
+% 4. Position Mapping:
+%   * Uses |findIndex| for DOF position calculation
+% 5. Global Assembly:
+%   * Utilizes |addElementIn| for matrix expansion
+%   * Employs |repeatAdd| for partitioned matrix assembly
+%
+%% Special Features
+% * Automatic Classification:
+%   * Separates massless and mass-bearing elements
+%   * Handles each type with specialized functions
+% * Complex Topology Support:
+%   * Handles bearings with multiple mass nodes
+%   * Manages connections between shaft and mass nodes
+% * Gravity Force Calculation:
+%   * Computes gravity forces only for mass-bearing components
+%
+%% Example
+% % Configure intermediate bearing with two bearings
+% Interbearing.amount = 2;
+% Interbearing.dofOfEachNodes = [2; 2];
+% Interbearing.stiffness = [1e6, 1e6; 1e7, 1e7];
+% Interbearing.stiffnessVertical = [1e6, 1e6; 1e7, 1e7];
+% Interbearing.damping = [300, 200; 400, 500];
+% Interbearing.dampingVertical = [300, 200; 400, 500];
+% Interbearing.mass = [0.5; 1]; % Concentrated masses
+% Interbearing.positionOnShaftNode = [1, 3; 2, 6]; % Shaft connections
+% Interbearing.positionNode = [7; 8]; % Mass node positions
+% nodeDof = [4,4,4,4,4,4,2,2]; % DOF configuration
+% % Generate global matrices
+% [M, K, C, Fg] = femInterBearing(Interbearing, nodeDof);
+%
+%% Implementation Notes
+% * Matrix Assembly Functions:
+%   * |repeatAdd|: Assembles 2×2 partitioned matrices
+%   * |repeatAdd2|: Handles larger partitioned matrices
+% * Position Handling:
+%   * |positionOnShaftNode| specifies shaft connection points
+%   * |positionNode| specifies mass node locations
+% * Zero-Mass Validation:
+%   * Requires single stiffness/damping for massless bearings
+%
+%% See Also
+% bearingElementInter, bearingElementInterMass, findIndex, addElementIn
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function  [M, K, C, Fg] = femInterBearing( InterBearing, nodeDof )
 

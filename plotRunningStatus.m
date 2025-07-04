@@ -1,13 +1,93 @@
-%% plotMesh
-% plot the running status diagram
-%% Syntax
-%  plotRuningStatus(t, status)
-%% Description
-% t: is a row vector (1*m)
+%% plotRunningStatus - Visualize rotor system operational status
 %
-% status: is a n*1 cell, n is the number of shafts. The data in each cell
-% is 3*m matrix, m is the length of t. 1st row is omega; 2nd row is speed;
-% 3rd row is acceleration.
+% This function generates time-domain plots of rotational dynamics parameters 
+% including phase, speed, and acceleration for multi-shaft rotor systems.
+%
+%% Syntax
+%  plotRunningStatus(t, status)
+%
+%% Description
+% |plotRunningStatus| creates standardized visualizations of rotor system 
+% operational parameters during runtime:
+% * Generates three separate plots: phase, speed, and acceleration
+% * Supports multi-shaft systems with automatic legend generation
+% * Saves figures in dedicated directory
+% * Implements standardized formatting for publication
+%
+%% Input Arguments
+% * |t| - Time vector [1×m]:
+%   * Simulation time points [s]
+%   * Must be monotonically increasing
+%
+% * |status| - System status data [n×1 cell array]:
+%   * n: Number of shafts
+%   * Each cell contains [3×m] matrix for one shaft:
+%     - Row 1: Phase (ω) [rad]
+%     - Row 2: Rotational speed (dω/dt) [rad/s]
+%     - Row 3: Acceleration (d²ω/dt²) [rad/s²]
+%   * m: Must match length of |t|
+%
+%% Output
+% Creates in './runningStatusDiagram' directory:
+% * |statusOfPhase.fig|       % Phase plot (MATLAB figure)
+% * |statusOfSpeed.fig|        % Speed plot (MATLAB figure)
+% * |statusOfAcceleration.fig| % Acceleration plot (MATLAB figure)
+%
+%% Visualization Details
+% 1. Plot Configuration:
+%    * Phase Plot:
+%      - Y-axis: Angular position [rad]
+%    * Speed Plot:
+%      - Y-axis: Rotational speed [rad/s]
+%    * Acceleration Plot:
+%      - Y-axis: Rotational acceleration [rad/s²]
+% 2. Formatting:
+%    * Automatic legend: 'Shaft 1', 'Shaft 2', ...
+%    * Uniform figure size: 15×8 cm
+%    * Consistent time axis across plots
+% 3. Layout:
+%    * Phase plot position: [5, 12] cm
+%    * Speed plot position: [22, 12] cm
+%    * Acceleration plot position: [5, 1.5] cm
+%
+%% Implementation
+% 1. Directory Management:
+%    * Creates 'runningStatusDiagram' if missing
+%    * Clears existing figures in directory
+% 2. Legend Generation:
+%    * Automatic shaft labeling ('Shaft n')
+% 3. Plot Generation:
+%    * Creates separate figures for each parameter
+%    * Overlays all shafts on each plot
+% 4. Output Handling:
+%    * Saves figures in compact .fig format
+%    * Closes figures after saving
+%
+%% Example
+% % Simulate dual-shaft system
+% t = linspace(0, 10, 1000);
+% status{1} = [sin(2*pi*t); 2*pi*cos(2*pi*t); -4*pi^2*sin(2*pi*t)];
+% status{2} = [1.5*sin(3*pi*t); 4.5*pi*cos(3*pi*t); -13.5*pi^2*sin(3*pi*t)];
+% 
+% % Generate status plots
+% plotRunningStatus(t, status);
+%
+%% Application Notes
+% * Typical Usage:
+%    - Post-simulation analysis
+%    - Transient response verification
+%    - Speed profile validation
+% * Interpretation:
+%    - Phase plots show angular position evolution
+%    - Speed plots reveal rotational velocity changes
+%    - Acceleration plots indicate torque requirements
+%
+%% See Also
+% calculateResponse, establishModel, plot2DStandard
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function plotRunningStatus(t, status)
 

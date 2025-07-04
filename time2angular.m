@@ -1,59 +1,105 @@
-%--------------------------------------------------------------------------
-% Function: time2angular
-% Description:
-%   This function is designed to convert a signal from the time domain to 
-%   the angular domain using a tacho signal. The tacho signal provides the 
-%   start time of each pulse, which helps in establishing the relationship 
-%   between time and angle.
+%% time2angular - Convert time-domain signals to angular domain
 %
-% Inputs:
-%   - time_signal: 
-%       The signal in the time domain that needs to be converted. It can be 
-%       a vector or a matrix. If it is a matrix, the function will handle 
-%       it appropriately regardless of whether the signals are arranged as 
-%       columns or rows.
-%   - time: 
-%       A vector representing the time sequence corresponding to the 
-%       time_signal. It should have the same length as the time_signal if 
-%       it is a vector, or the same number of columns as the time_signal 
-%       if it is a matrix.
-%   - tk: 
-%       A vector containing the start time of each pulse in the tacho signal. 
-%       This information is crucial for mapping the time domain to the 
-%       angular domain.
+% This function transforms time-domain vibration signals into the angular 
+% domain based on tacho pulse information, enabling rotation-synchronous 
+% analysis of periodic machinery behavior.
 %
-% Optional Inputs:
-%   - NameValue: 
-%       A structure with the following name - value pair:
-%       - angular_sampling_frequency: 
-%           Default value is 100. It represents the number of points in each 
-%           revolution for resampling. This parameter determines the 
-%           resolution of the angular signal.
+%% Syntax
+%   [angular_signal, thetaW, thetaK] = time2angular(time_signal, time, tk)
+%   [angular_signal, thetaW, thetaK] = time2angular(_, Name, Value)
 %
-% Outputs:
-%   - angular_signal: 
-%       The signal converted to the angular domain. It has the same number 
-%       of rows as the input time_signal (after potential reshaping) and 
-%       a number of columns determined by the angular sampling frequency.
-%   - thetaW: 
-%       A vector representing the corresponding angular array. It is used 
-%       to define the angular positions for the resampled signal.
-%   - thetaK: 
-%       A vector containing the end - point of each period in the angular 
-%       domain. It helps in dividing the angular range into revolutions.
+%% Description
+% |time2angular| performs rotational domain conversion through:
+% * Tacho pulse-driven period segmentation
+% * Uniform angular resampling
+% * Time-angle mapping via interpolation
+% * Automatic signal orientation handling
 %
-% Example:
-%   [angular_signal, thetaW, thetaK] = time2angular(time_signal, time, tk, ...
-%       'angular_sampling_frequency', 200);
+%% Input Arguments
+% * |time_signal| - Time-domain signals [matrix]:
+%   * Rows: Signals (automatically oriented)
+%   * Columns: Time samples
+% * |time| - Time vector [1×n]:
+%   * Corresponding time points (seconds)
+% * |tk| - Tacho pulse times [vector]:
+%   * Start times of rotational periods (seconds)
 %
-% Notes:
-%   - The input time_signal and time should be consistent in terms of length 
-%     or number of columns.
-%   - The interpolation methods ('cubic' for time interpolation and 'pchip' 
-%     for signal interpolation) are used to ensure smooth resampling.
-%   - The function reshapes the input and output signals to handle both 
-%     row - and column - arranged signals properly.
-%--------------------------------------------------------------------------
+%% Name-Value Pair Arguments
+% * |'angular_sampling_frequency'| - Angular resolution [points/rev]:
+%   * Default: 100
+%   * Determines angular sampling density per revolution
+%
+%% Output Arguments
+% * |angular_signal| - Angular-domain signals [matrix]:
+%   * Same orientation as input signals
+%   * Uniformly sampled in rotational space
+% * |thetaW| - Angular positions [vector]:
+%   * Resampling points (radians)
+%   * Range: 0 to 2π × revolution_count
+% * |thetaK| - Period end-points [vector]:
+%   * Angular positions of revolution boundaries (radians)
+%
+%% Algorithm
+% 1. Angular Domain Setup:
+%    $\theta_k = 0:2\pi:R \cdot 2\pi$
+%    where $R$ = number of revolutions
+% 2. Uniform Sampling:
+%    $\Delta\theta = \frac{2\pi}{f_{\theta}}$
+%    $\theta_W = 0:\Delta\theta:\theta_k(\text{end})$
+% 3. Time-Angle Mapping:
+%    $t_W = \text{cubic}(\theta_K, t_k, \theta_W)$
+% 4. Signal Resampling:
+%    $\text{signal}_\theta = \text{pchip}(t, \text{signal}_t, t_W)$
+%
+%% Key Features
+% * Automatic Signal Orientation:
+%   - Maintains original row/column layout
+% * Precise Angular Resampling:
+%   - Uniform angular sampling regardless of speed variation
+% * Robust Interpolation:
+%   - Cubic interpolation for time-angle mapping
+%   - PCHIP for signal preservation
+% * Full Angular Range:
+%   - Covers 0 to 2π × revolution_count
+%
+%% Implementation Notes
+% 1. Revolution Counting:
+%    $R = \text{length}(t_k) - 1$
+% 2. Angular Grid:
+%    $\theta_K = [0, 2\pi, 4\pi, \dots, 2\pi R]$
+% 3. Resampling Parameters:
+%    $\Delta\theta = \frac{2\pi}{f_{\theta}}$
+% 4. Time Interpolation:
+%    Uses cubic interpolation for smooth rotation mapping
+% 5. Signal Interpolation:
+%    Uses Piecewise Cubic Hermite Interpolating Polynomial (PCHIP)
+%
+%% Example
+% % Generate tacho pulses (10Hz rotation)
+% fs = 1000; % Sampling frequency (Hz)
+% t = 0:1/fs:5; % Time vector (5 seconds)
+% tk = 0:0.1:5; % Tacho pulses (10Hz rotation)
+% 
+% % Create test signal (1x revolution harmonic)
+% signal = sin(2*pi*10*t); 
+% 
+% % Convert to angular domain
+% [ang_sig, theta, thetaK] = time2angular(signal, t, tk, ...
+%     'angular_sampling_frequency', 360);
+% 
+% % Visualize angular-domain signal
+% figure;
+% plot(theta, ang_sig);
+% xlabel('Angle (radians)'); 
+% ylabel('Amplitude');
+% title('1-Per-Revolution Signal in Angular Domain');
+%
+%% See Also
+% interp1, pchip, synchronous_averaging
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function [angular_signal, thetaW, thetaK] = time2angular(time_signal, time, tk, NameValue)
 

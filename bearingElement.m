@@ -1,47 +1,53 @@
-%% BEARINGELEMENT - Generate stiffness/damping matrices for massless bearings
-% Constructs local stiffness and damping matrices for bearing elements 
-% without concentrated mass in rotor dynamics systems.
+%% bearingElement - Generate stiffness/damping matrices for massless bearings
+%
+% This function constructs local stiffness and damping matrices for bearing 
+% elements without concentrated mass in rotor dynamics models.
 %
 %% Syntax
-%   [Ke, Ce] = bearingElement(ANBearing)
+%  [Ke, Ce] = bearingElement(ANBearing)
 %
 %% Description
-% |BEARINGELEMENT| calculates the local stiffness and damping matrices 
-% for massless bearing elements. Supports:
-% * Orthotropic bearing properties (horizontal/vertical directions)
-% * Automatic matrix expansion to match nodal DOF
+% |bearingElement| calculates stiffness and damping matrices for massless 
+% bearing elements. The function:
+% * Validates bearing property inputs
+% * Constructs orthotropic stiffness/damping matrices
+% * Automatically expands matrices to match nodal DOF count
 %
 %% Input Arguments
-% *ANBearing* - Bearing properties structure:
-%   .dofOfEachNodes     % DOF count at bearing node (scalar)
-%   .stiffness          % Horizontal stiffness [N/m]
-%   .stiffnessVertical  % Vertical stiffness [N/m]
-%   .damping            % Horizontal damping [Ns/m]
-%   .dampingVertical    % Vertical damping [Ns/m]
+% * |ANBearing| - Bearing properties structure with fields:
+%   * |dofOnShaftNode|   % DOF count per bearing node (scalar integer)
+%   * |stiffness|         % Horizontal stiffness coefficient [N/m]
+%   * |stiffnessVertical| % Vertical stiffness coefficient [N/m]
+%   * |damping|           % Horizontal damping coefficient [N·s/m]
+%   * |dampingVertical|    % Vertical damping coefficient [N·s/m]
 %
 %% Output Arguments
-% *Ke*     % Local stiffness matrix (n×n)
-% *Ce*     % Local damping matrix (n×n)
-%           % n = ANBearing.dofOfEachNodes
+% * |Ke| - Local stiffness matrix (n×n), where n = dofOnShaftNode
+% * |Ce| - Local damping matrix (n×n), where n = dofOnShaftNode
 %
-%% Algorithm
-% 1. Input validation:
-%    - Ensures single stiffness/damping value per direction
-% 2. Matrix construction:
-%    - Creates 2×2 directional matrices
-%    - Expands to full DOF size with zero padding
+%% Matrix Construction Rules
+% 1. Orthotropic modeling:
+%    * Horizontal and vertical stiffness/damping treated independently
+%    * Zero coupling between directions
+% 2. Matrix expansion:
+%    * Stiffness/damping terms placed in corresponding DOF positions
+%    * Remaining DOF filled with zeros
+% 3. Zero value handling:
+%    * Zero stiffness/damping values are filtered out
+%    * Preserves non-zero values only
 %
 %% Example
 % % Create massless bearing parameters
-% bearingProps = struct('dofOfEachNodes', 4, ...
-%                       'stiffness', 1e8, ...
-%                       'stiffnessVertical', 1.2e8, ...
-%                       'damping', 500, ...
-%                       'dampingVertical', 600);
-% [Ke, Ce] = bearingElement(bearingProps);
+% bearing = struct('dofOnShaftNode', 4, ...   % Correct field name
+%                  'stiffness', 1e8, ...
+%                  'stiffnessVertical', 1.2e8, ...
+%                  'damping', 500, ...
+%                  'dampingVertical', 600);
+% % Generate stiffness and damping matrices
+% [Ke, Ce] = bearingElement(bearing);
 %
 %% See Also
-% femBearing, bearingElementMass, assembleLinear
+% bearingElementMass, diskElement, shaftElement, assemblyGlobalMatrix
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.

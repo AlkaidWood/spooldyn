@@ -1,74 +1,101 @@
-%% FEMBEARING - Generate FEM matrices for bearing components
-% Assembles global mass, stiffness, and damping matrices with gravity vector 
-% for bearing systems. Supports normal and loose bearing configurations.
+%% femBearing - Generate FEM matrices for bearing components in rotor systems
+%
+% This function assembles global mass, stiffness, damping matrices and 
+% gravity vectors for bearing systems, supporting both standard and 
+% loosened bearing configurations.
 %
 %% Syntax
-%   [M, K, C, Fg] = femBearing(Bearing, nodeDof)
-%   [M, K, C, Fg, KLoose, CLoose] = femBearing(Bearing, nodeDof, LoosingBearing)
+%  [M, K, C, Fg] = femBearing(Bearing, nodeDof)
+%  [M, K, C, Fg, KLoose, CLoose] = femBearing(Bearing, nodeDof, LoosingBearing)
 %
 %% Description
-% |FEMBEARING| handles both standard and mass-containing bearings, with 
-% special handling for bearings with clearance/looseness effects. Features:
-% * Dual operation modes: normal vs. loose bearing configurations
-% * Distributed stiffness/damping modeling
-% * Gravity force integration
+% |femBearing| constructs finite element matrices for bearing components 
+% in rotor dynamics models. The function:
+% * Handles both massless bearings and bearings with concentrated masses
+% * Supports normal and loosened bearing configurations
+% * Generates partitioned matrices for global assembly
+% * Computes gravity forces for mass-bearing components
 %
 %% Input Arguments
-% *Bearing* - Bearing properties structure:
-%   .amount             % Number of bearings (scalar)
-%   .dofOfEachNodes     % [N×n] DOF per node
-%   .stiffness          % [N×n] Bearing horizontal stiffness coefficients [N/m]
-%   .stiffnessVertical  % [N×n] Bearing vertical stiffness coefficients [N/m]
-%   .damping            % [N×n] Bearing horizontal Damping coefficients [Ns/m]
-%   .dampingVertical    % [N×n] Bearing vertical Damping coefficients [Ns/m]
-%   .mass               % [N×n] Bearing masses [kg]
-%   .positionOnShaftNode% [N×1] Mounting on shaft node indices
-%   .positionNode       % [N×1] mass node indices of bearings
-% N is number of bearings
-% n is the maximum number of bearing mass blocks +1 in your rotor system
+% * |Bearing| - Bearing properties structure:
+%   * |amount|             % Number of bearings (scalar)
+%   * |dofOfEachNodes|     % DOF per bearing node [N×n matrix]
+%   * |stiffness|          % Horizontal stiffness [N/m] [N×n matrix]
+%   * |stiffnessVertical|  % Vertical stiffness [N/m] [N×n matrix]
+%   * |damping|            % Horizontal damping [N·s/m] [N×n matrix]
+%   * |dampingVertical|    % Vertical damping [N·s/m] [N×n matrix]
+%   * |mass|               % Concentrated masses [kg] [N×n matrix]
+%   * |positionOnShaftNode|% Mounting shaft node indices [N×1 vector]
+%   * |positionNode|       % Mass node indices [N×1 vector]
+%   * N: Number of bearings
+%   * n: Maximum number of mass blocks per bearing + 1
 %
-% *nodeDof*             % [M×1] DOF count per system node, M is the number
-%                         of nodes
+% * |nodeDof| - DOF counts per system node [M×1 vector], M = number of nodes
 %
-% *LoosingBearing*     % (Optional) Loose bearing parameters:
-%   .inBearingNo       % Bearing indices with clearance
-%   .loosingStiffness  % Modified vertical stiffness values [N/m]
-%   .loosingDamping    % Modified vertical damping values [Ns/m]
+% * |LoosingBearing| - (Optional) Loosened bearing configuration:
+%   * |inBearingNo|       % Bearing indices with clearance [vector]
+%   * |loosingStiffness|  % Modified vertical stiffness [N/m] [vector]
+%   * |loosingDamping|    % Modified vertical damping [N·s/m] [vector]
+%   * |loosingPositionNo| % Position indices for modification [vector]
 %
 %% Output Arguments
-% *M*          % Global mass matrix (n×n sparse)
-% *K*          % Global stiffness matrix (n×n sparse)
-% *C*          % Global damping matrix (n×n sparse)
-% *Fg*         % Gravity force vector (n×1)
-% *KLoose*     % Loose bearing stiffness matrix (n×n sparse)
-% *CLoose*     % Loose bearing damping matrix (n×n sparse)
-% n is the number of dofs of entire rotor model
+% * |M|      % Global mass matrix [sparse n_total×n_total]
+% * |K|      % Global stiffness matrix [sparse n_total×n_total]
+% * |C|      % Global damping matrix [sparse n_total×n_total]
+% * |Fg|     % Gravity force vector [n_total×1]
+% * |KLoose| % Loosened stiffness matrix [sparse n_total×n_total]
+% * |CLoose| % Loosened damping matrix [sparse n_total×n_total]
+%   * n_total: Total DOF of rotor system = sum(nodeDof)
 %
-%% Algorithm
-% 1. Bearing classification:
-%    - Normal bearings (mass = 0): Direct stiffness/damping addition
-%    - Mass bearings: Multi-node element assembly
-% 2. Loose bearing handling:
-%    - Modifies stiffness/damping for specified bearings
-%    - Maintains separate matrix copies for dynamic switching
+%% Matrix Assembly Algorithm
+% 1. Bearing Classification:
+%   * Normal bearings (mass=0): Direct stiffness/damping addition
+%   * Mass bearings: Multi-node element assembly
+% 2. Normal Bearing Processing:
+%   * Validates stiffness/damping input dimensions
+%   * Generates element matrices via |bearingElement|
+%   * Assembles to global positions
+% 3. Mass Bearing Processing:
+%   * Generates matrices via |bearingElementMass|
+%   * Handles complex node connectivity
+%   * Adds gravity forces
+% 4. Loosened Bearing Handling:
+%   * Modifies specified stiffness/damping values
+%   * Generates separate loosened matrices
+%   * Maintains original matrices for normal operation
+%
+%% Special Features
+% * Dual Matrix Output:
+%   * Standard matrices (K, C) for normal operation
+%   * Loosened matrices (KLoose, CLoose) for fault conditions
+% * Position Mapping:
+%   * Automatic DOF index calculation via |findIndex|
+% * Matrix Expansion:
+%   * Uses |addElementIn| for partitioned matrix assembly
 %
 %% Example
 % % Standard bearing assembly
-% bearingParams = inputBearingHertzBO().Bearing;
-% nodeDOF = [4;4;...];
-% Bearing.positionOnShaftNode = [3; 2;...];
-% Bearing.positionNode = [12; 16;...];
-% [M_bear, K_bear] = femBearing(bearingParams, nodeDOF);
+% bearingCfg = struct('amount', 2, ...
+%                     'dofOfEachNodes', [2;2], ...
+%                     'stiffness', [1e8, 1e9; 1.2e8, 1e9], ...
+%                     'stiffnessVertical', [1e8, 1e9; 1.2e8, 1e9], ...
+%                     'damping', [500, 0; 600, 0], ...
+%                     'dampingVertical', [500, 0; 600, 0], ...
+%                     'mass', [0.3; 0.3], ...
+%                     'positionOnShaftNode', [4; 5], ...
+%                     'positionNode', [12; 16]);
+% nodeDOF = [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4]'; % Example DOF vector
+% [M, K] = femBearing(bearingCfg, nodeDOF);
 %
-% % Loose bearing configuration
-% looseParams = struct('inBearingNo', 2, 'loosingStiffness', 1e6, ...);
-% nodeDOF = [4;4;...];
-% Bearing.positionOnShaftNode = [3; 2;...];
-% Bearing.positionNode = [12; 16;...];
-% [M, K, C, Fg, KL, CL] = femBearing(bearingParams, nodeDOF, looseParams);
+% % Loosened bearing configuration
+% looseCfg = struct('inBearingNo', 2, ...
+%                  'loosingStiffness', 5e7, ...
+%                  'loosingDamping', 300, ...
+%                  'loosingPositionNo', 1);
+% [M, K, C, Fg, KL, CL] = femBearing(bearingCfg, nodeDOF, looseCfg);
 %
 %% See Also
-% bearingElement, bearingElementMass, meshModel
+% bearingElement, bearingElementMass, findIndex, addElementIn, femShaft
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.

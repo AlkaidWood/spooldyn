@@ -1,65 +1,127 @@
-%% ESTABLISHMODEL Generate system matrices for rotor dynamics analysis
-% Constructs mass, stiffness, damping, and gyroscopic matrices for rotor systems
-% 
-% Syntax:
-%   Parameter = establishModel(InitialParameter)
-%   Parameter = establishModel(InitialParameter, Name, Value)
+%% establishModel - Generate system matrices for rotor dynamics analysis
 %
-% Input Arguments:
-%   InitialParameter - System configuration structure with fields:
-%       .Shaft: [1×1 struct]               % Shaft properties
-%       .Disk: [1×1 struct]                % Disk components
-%       .Bearing: [1×1 struct]             % Bearing components
-%       .ComponentSwitch: [1×1 struct]     % Component activation flags
-%       .IntermediateBearing: [1×1 struct]  % Intermediate bearing params (optional)
-%       .RubImpact: [1×1 struct]            % Rub-impact properties (optional)
-%       .LoosingBearing: [1×1 struct]       % Loosing bearing parameters (optional)
-%       .CouplingMisalignment: [1×1 struct] % Coupling misalignment params (optional)
+% This function constructs the complete finite element model for rotor systems,
+% assembling mass, stiffness, damping, and gyroscopic matrices from individual
+% components. It serves as the core model assembly routine for rotor dynamics
+% simulations.
 %
-% Name-Value Pair Arguments:
-%   gridFineness - Mesh resolution specification:
-%       'low' (default) | 'middle' | 'high' | numeric vector
-%   isPlotModel  - Display system schematic diagram (default: true)
-%   isPlotMesh   - Visualize mesh discretization (default: true)
-%   matrix_value_tol - Delete the extremly small value in all matrix (default: 1e-12) 
+%% Syntax
+%  Parameter = establishModel(InitialParameter)
+%  Parameter = establishModel(InitialParameter, NameValues)
 %
-% Output:
-%   Parameter - Enhanced system structure with FEM components:
-%       .Shaft: [1×1 struct]               % Original shaft parameters
-%       .Disk: [1×1 struct]                % Original disk parameters
-%       .Bearing: [1×1 struct]             % Original bearing parameters
-%       .ComponentSwitch: [1×1 struct]     % Component activation states
-%       .IntermediateBearing: [1×1 struct] % Intermediate bearing params
-%       .RubImpact: [1×1 struct]           % Rub-impact parameters
-%       .LoosingBearing: [1×1 struct]      % Loosing bearing parameters
-%       .CouplingMisalignment: [1×1 struct]% Coupling parameters
-%       .Mesh: [1×1 struct]                % Discretization results (see
-%                                            meshModel.m)
-%       .Matrix: [1×1 struct]              % System matrices:
-%           .mass: sparse matrix            % Mass matrix (n×n)
-%           .stiffness: sparse matrix      % Stiffness matrix (n×n)
-%           .damping: sparse matrix        % Damping matrix (n×n)
-%           .gyroscopic: sparse matrix     % Gyroscopic matrix (n×n)
-%           .matrixN: sparse matrix        % Nonlinear term matrix (n×n)
-%           .unbalanceForce: double vector  % Unbalance force (n×1)
-%           .gravity: double vector         % Gravity force (n×1)
-%           .eccentricity: double vector    % Disk eccentricities (m×1)
+%% Description
+% |establishModel| performs the complete finite element assembly process for
+% rotor systems by:
+% * Generating mesh discretization
+% * Creating component matrices (shaft, disk, bearing)
+% * Assembling global system matrices
+% * Applying numerical conditioning
+% * Handling special configurations (loose bearings, custom rotation profiles)
 %
-% Example:
-%   % Basic usage with default settings
-%   config = establishModel(sysParams);
+%% Input Arguments
+% * |InitialParameter| - System configuration structure with fields:
+%   * |Shaft|: [1×1 struct]               % Shaft geometric/material properties
+%   * |Disk|: [1×1 struct]                % Disk inertial properties
+%   * |Bearing|: [1×1 struct]             % Bearing stiffness/damping properties
+%   * |ComponentSwitch|: [1×1 struct]     % Component activation flags:
+%       .hasIntermediateBearing
+%       .hasLoosingBearing
+%       .hasRubImpact
+%       .hasCouplingMisalignment
+%   * |IntermediateBearing|: [1×1 struct] % Intermediate bearing parameters
+%   * |RubImpact|: [1×1 struct]           % Rub-impact properties
+%   * |LoosingBearing|: [1×1 struct]      % Loosening bearing parameters
+%   * |CouplingMisalignment|: [1×1 struct] % Coupling misalignment parameters
+%   * |Status|: [1×1 struct]              % Operational status parameters
 %
-%   % High-resolution mesh without visualization
-%   config = establishModel(sysParams, ...
-%       'gridFineness', 'high', ...
-%       'isPlotModel', false, ...
-%       'isPlotMesh', false);
+%% Name-Value Pair Arguments
+% * |gridFineness| - Mesh resolution specification:
+%   * |'low'|: Coarse mesh (default)
+%   * |'middle'|: Medium mesh density
+%   * |'high'|: Fine mesh resolution
+%   * [numeric vector]: Custom node positions
+% * |isPlotModel| - Display system schematic diagram (default: true)
+% * |isPlotMesh| - Visualize mesh discretization (default: true)
+% * |matrix_value_tol| - Threshold for matrix element truncation (default: 1e-12)
 %
-%   % Custom mesh specification
-%   customMesh = linspace(0, 1.5, 50);
-%   config = establishModel(sysParams, 'gridFineness', customMesh);
+%% Output Structure
+% * |Parameter| - Enhanced system structure with fields:
+%   * Original input components (|Shaft|, |Disk|, etc.)
+%   * |Mesh|: [1×1 struct]                % Discretization results:
+%       .nodeDistance                     % Element lengths
+%       .Node                             % Node properties array
+%       .dofInterval                      % DOF index ranges
+%   * |Matrix|: [1×1 struct]              % Assembled system matrices:
+%       .mass: sparse matrix              % Global mass matrix (n×n)
+%       .stiffness: sparse matrix         % Global stiffness matrix (n×n)
+%       .damping: sparse matrix           % Global damping matrix (n×n)
+%       .gyroscopic: sparse matrix        % Gyroscopic matrix (n×n)
+%       .matrixN: sparse matrix           % Transient matrix (n×n)
+%       .unbalanceForce: vector           % Unbalance force vector (n×1)
+%       .gravity: vector                  % Gravity force vector (n×1)
+%       .eccentricity: vector             % Disk eccentricity vector (m×1)
+%       .gyroscopic_with_domega: matrix   % Precomputed gyroscopic matrix (when applicable)
+%       .stiffnessLoosing: matrix         % Loosened bearing stiffness (if active)
+%       .dampingLoosing: matrix            % Loosened bearing damping (if active)
 %
-% See also FEMSHaft, FEMDisk, FEMBearing
+%% Model Assembly Process
+% 1. Visualization:
+%    * Schematic diagram (|plotModel|)
+%    * Mesh visualization (|plotMesh|)
+% 2. Discretization:
+%    * Mesh generation (|meshModel|)
+% 3. Component Matrix Generation:
+%    * Shaft FEM matrices (|femShaft|)
+%    * Disk FEM matrices (|femDisk|)
+%    * Bearing FEM matrices (|femBearing|)
+%    * Intermediate bearing matrices (|femInterBearing|)
+% 4. Matrix Assembly:
+%    * Component matrix expansion
+%    * Rayleigh damping application
+%    * Global matrix summation
+% 5. Numerical Conditioning:
+%    * Small value truncation
+%    * Sparse matrix conversion
+% 6. Special Case Handling:
+%    * Loosened bearing matrices
+%    * Precomputed gyroscopic terms
+%
+%% Special Features
+% * Rayleigh Damping (Just for rotating part):
+%   $ C = \alpha M + \beta K $
+% * Matrix Conditioning:
+%   Elements < |matrix_value_tol| are zeroed
+% * Gyroscopic Precomputation:
+%   For constant-speed operation, computes $ G \cdot \omega $ in advance
+% * Loosened Bearing Handling:
+%   Maintains separate stiffness/damping matrices for fault conditions
+%
+%% Example
+% % Basic model assembly (after generating initial parameters with input..() functions)
+% sysModel = establishModel(rotorParams);
+%
+% % Custom mesh with suppressed visualization
+% sysModel = establishModel(rotorParams, ...
+%     'gridFineness', linspace(0, 2, 100), ...
+%     'isPlotModel', false, ...
+%     'isPlotMesh', false);
+%
+% % High-resolution mesh with strict conditioning
+% sysModel = establishModel(rotorParams, ...
+%     'gridFineness', 'high', ...
+%     'matrix_value_tol', 1e-14);
+%
+%% Dependencies
+% * |plotModel|, |plotMesh| - Visualization functions
+% * |meshModel| - Mesh generation
+% * |femShaft|, |femDisk|, |femBearing|, |femInterBearing| - Component matrix generators
+%
+%% See Also
+% meshModel, femShaft, femDisk, femBearing, calculateResponse
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 
 

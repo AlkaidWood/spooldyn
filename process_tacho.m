@@ -1,79 +1,102 @@
-%--------------------------------------------------------------------------
-% Function: process_tacho
-% Description:
-%   This function processes a raw tacho signal to extract the start time of each 
-%   pulse and calculate the rotational speed in both RPM (revolutions per minute) 
-%   and rad/s (radians per second). It also provides several optional processing 
-%   steps such as deleting low-speed points, smoothing the speed curve, smoothing 
-%   the tacho signal, and plotting the speed curve.
+%% process_tacho - Process raw tacho signal to extract pulse times and rotational speed
 %
-% Inputs:
-%   - tacho: 
-%       The raw tacho signal, which is a vector representing the tacho sensor 
-%       output over time.
-%   - sampling_frequency: 
-%       The sampling frequency of the tacho signal.
-%   - time:
-%       Time signal vector corresponding to the tacho signal, must have the same
-%       length as tacho signal. If set to 0 (default), the function will generate
-%       a time series based on sampling_frequency.
+% This function processes a raw tacho signal to identify pulse start times and 
+% compute rotational speed. It supports multiple processing options including 
+% noise filtering, low-speed point removal, signal smoothing, and visualization.
 %
-% Optional Inputs:
-%   - NameValue: 
-%       A structure with the following name-value pairs:
-%       - is_delete_low_speed_points: 
-%           Default value is false. If set to true, the function will delete all 
-%           consecutive low-speed points at both ends of the signal.
-%       - low_speed_threshold: 
-%           Default value is 2*pi. This parameter is used when is_delete_low_speed_points 
-%           is set to true. It defines the speed threshold below which points are deleted.
-%           The unit is rad/s
-%       - is_smooth_speed: 
-%           Default value is false. If set to true, the function will smooth the 
-%           speed curve using the Savitzky-Golay filter.
-%       - is_smooth_tacho: 
-%           Default value is false. If set to true, the speed will be smoothed first, 
-%           and then the start time of each pulse will be recalculated based on the 
-%           smoothed speed.
-%       - is_plot_speed: 
-%           Default value is false. If set to true, the function will generate a 
-%           figure showing the speed curve.
+%% Syntax
+%   tk = process_tacho(tacho, sampling_frequency)
+%   tk = process_tacho(tacho, sampling_frequency, time)
+%   tk = process_tacho(_, NameValue)
+%   [tk, omega_rpm] = process_tacho(_)
+%   [tk, omega_rpm, omega_rad] = process_tacho(_)
 %
-% Outputs:
-%   - varargout: 
-%       The number and type of outputs depend on the number of output arguments 
-%       specified when calling the function:
-%       - If nargout = 1:
-%           varargout{1} is a vector containing the start time of each pulse in the tacho signal.
-%       - If nargout = 2:
-%           varargout{1} is the start time of each pulse, and varargout{2} is a vector 
-%           containing the rotational speed in RPM.
-%       - If nargout = 3:
-%           varargout{1} is the start time of each pulse, varargout{2} is the rotational 
-%           speed in RPM, and varargout{3} is the rotational speed in rad/s.
+%% Description
+% |process_tacho| performs comprehensive processing of tachometer signals:
+% * Identifies pulse start times using adaptive thresholding
+% * Computes rotational speed (RPM and rad/s)
+% * Implements advanced signal conditioning options
+% * Supports multiple output formats
 %
-% Example:
-%   % Get only the start time of each pulse with generated time signal
-%   tk = process_tacho(tacho, sampling_frequency);
-%   % Get start time and speed in RPM with custom time signal
-%   [tk, omega_rpm] = process_tacho(tacho, sampling_frequency, time, ...
-%       'is_delete_low_speed_points', true, 'low_speed_threshold', 0.5);
-%   % Get all outputs and plot speed curve
-%   [tk, omega_rpm, omega_rad] = process_tacho(tacho, sampling_frequency, time, ...
-%       'is_smooth_speed', true, 'is_plot_speed', true);
+%% Inputs
+% * |tacho| - Raw tacho signal [vector]
+% * |sampling_frequency| - Sampling rate [Hz]
 %
-% Notes:
-%   - When is_delete_low_speed_points=true, the function deletes consecutive low-speed points
-%     at both ends of the signal. Specifically, it removes all low-speed points from the beginning
-%     until encountering the first point with speed above threshold, and similarly removes
-%     all low-speed points from the end backward until the last point with speed above threshold.
-%   - The function uses linear interpolation to find the exact time when the tacho 
-%     signal crosses a threshold.
-%   - Speed smoothing (when enabled) uses two successive applications of Savitzky-Golay filter
-%     with window size 20 for enhanced smoothing effect.
-%   - The low-speed point deletion is based on the time difference between consecutive 
-%     start times of pulses.
-%--------------------------------------------------------------------------
+%% Optional Inputs
+% * |time| - Time vector corresponding to tacho signal [vector]:
+%   * Must match length of tacho
+%   * Default: auto-generated time series
+% * |Name-Value Pairs| - Processing options (case-insensitive):
+%   * |'is_delete_low_speed_points'| - Delete low-speed points [logical]:
+%     * |false| (default) | true |
+%   * |'low_speed_threshold'| - Speed threshold for deletion [rad/s]:
+%     * Default: 2*π rad/s (1 revolution per second)
+%   * |'is_smooth_speed'| - Apply Savitzky-Golay smoothing to speed [logical]:
+%     * |false| (default) | true |
+%   * |'is_smooth_tacho'| - Recalculate pulses from smoothed speed [logical]:
+%     * |false| (default) | true |
+%   * |'is_plot_speed'| - Generate speed visualization [logical]:
+%     * |false| (default) | true |
+%
+%% Outputs
+% * |tk| - Pulse start times [vector]:
+%   * Time instants of pulse initiation
+%   * Units: seconds
+% * |omega_rpm| - Rotational speed [vector]:
+%   * Units: revolutions per minute (RPM)
+%   * Same length as tk
+% * |omega_rad| - Rotational speed [vector]:
+%   * Units: radians per second (rad/s)
+%   * Same length as tk
+%
+%% Algorithm Details
+% 1. Pulse Detection:
+%    * Adaptive threshold: (max(tacho) + min(tacho)) / 2
+%    * Linear interpolation for precise timing
+% 2. Speed Calculation:
+%    * ω_rad = 2π / Δt_pulses
+%    * ω_rpm = ω_rad × 60/(2π)
+% 3. Signal Processing:
+%    * Low-speed removal: Removes consecutive endpoints < threshold
+%    * Smoothing: Dual-pass Savitzky-Golay filter (window=20)
+%    * Signal regeneration: Cumulative integration from smoothed speed
+%
+%% Examples
+% % 1. Basic pulse detection with simulated signal
+%   Fs = 20000;                          % Sampling frequency (Hz)
+%   t = 0:1/Fs:5;                       % Time vector for 10 seconds
+%   f_rot = 10;                           % Rotation frequency 
+%   tacho = 100*sin(2*pi*f_rot*t);
+%   tk = process_tacho(tacho, Fs, t, 'is_plot_speed', true);    % Get pulse times
+%
+% % 2. Full processing with visualization
+%   [tk, rpm] = process_tacho(tacho, Fs, t, ...
+%       'is_delete_low_speed_points', true, ...
+%       'low_speed_threshold', 3*pi, ...
+%       'is_smooth_speed', true, ...
+%       'is_plot_speed', true);
+%
+% % 3. Signal regeneration from smoothed speed
+%   [tk, rpm, rads] = process_tacho(tacho, Fs, t, ...
+%       'is_smooth_tacho', true, 'is_plot_speed', true);
+%
+%% Application Notes
+% 1. Low-Speed Handling:
+%    * Removes unreliable endpoints in run-up/coast-down
+%    * Preserves valid transient regions
+% 2. Smoothing Recommendations:
+%    * |is_smooth_speed|: For cleaner speed visualization
+%    * |is_smooth_tacho|: For high-noise signal recovery
+% 3. Visualization:
+%    * Compares raw and processed speed when smoothing applied
+%    * Standardized 500×400 pixel figure size
+%
+% See Also
+% smoothdata, cumtrapz, gradient, smooth
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function [varargout] = process_tacho(tacho, sampling_frequency, time, NameValue)
 

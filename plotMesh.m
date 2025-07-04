@@ -1,57 +1,109 @@
-%% PLOTMESH - Visualize FEM mesh discretization results
-% Generates schematic diagrams of mesh configuration with component annotations.
+%% plotMesh - Visualize finite element mesh discretization for rotor systems
+% Generates detailed schematic diagrams of mesh configurations with component annotations.
 %
 %% Syntax
 %   plotMesh(Parameter)
 %
 %% Description
-% |PLOTMESH| creates visualization of FEM mesh discretization showing:
-% * Key node locations (bearings/disks/special components)
-% * Mesh node distribution
-% * Component-node relationships
-% * Bearing type markers
-%
-% Outputs include:
-% * Per-shaft mesh diagrams (.fig/.png)
-% * Automatic directory creation ('meshDiagram')
+% |plotMesh| creates comprehensive visualizations of FEM meshes with:
+% * Key component location markers
+% * Hierarchical node classification
+% * Automated legend generation
+% * Publication-quality formatting
+% Output includes:
+% * Per-shaft diagram files (.fig/.png)
+% * Standardized output directory ('meshDiagram')
 %
 %% Input Arguments
-% *Parameter* - System configuration structure containing:
-%   .Mesh               % Mesh data from |meshModel|
-%     .keyPointsDistance% [N×1 cell] Key node positions per shaft
-%     .nodeDistance     % [N×1 cell] Node positions per shaft  
-%     .Node             % [M×1 struct] Node properties:
-%       .name           % Node ID
-%       .onShaftNo      % Parent shaft index
-%       .onShaftDistance% Axial position [m]
-%       .isBearing      % Bearing node flag
-%   .Shaft              % Shaft geometry parameters
-%   .ComponentSwitch   % Active component flags
+% * |Parameter| - System configuration structure containing:
+%   * |Mesh|: Finite element mesh data [struct]
+%     .keyPointsDistance   % Key node positions per shaft [nShafts×1 cell]
+%     .nodeDistance        % Node positions per shaft [nShafts×1 cell]
+%     .Node                % Node properties array [nNodes×1 struct]:
+%       .name              % Node ID
+%       .onShaftNo         % Parent shaft index
+%       .onShaftDistance   % Axial position [m]
+%       .diskNo            % Disk association ID
+%       .bearingNo         % Bearing association ID
+%       .isBearing         % Bearing node flag
+%   * |Shaft|: Geometric parameters [struct array]
+%     .amount              % Number of shafts
+%     .totalLength         % Lengths [m] [nShafts×1]
+%   * |ComponentSwitch|: Component activation status [struct]
+%     .hasRubImpact        % Rub-impact status
+%     .hasIntermediateBearing % Intermediate bearing status
+%     .hasLoosingBearing   % Loose bearing status
+%     .hasCouplingMisalignment % Coupling status
+%     .hasCustom           % Custom component status
 %
 %% Output
-% Generates in './meshDiagram' directory:
-% * MeshResultOfShaft[n].fig/png  % Individual shaft mesh diagrams
+% Generates in './meshDiagram/' directory:
+%   MeshResultOfShaft[n].fig  % MATLAB figure file
+%   MeshResultOfShaft[n].png  % Image file
+% Where [n] = shaft index (1,2,...,N)
 %
 %% Visualization Features
-% 1. Differentiated markers for:
-%    - Key nodes (red circles)
-%    - Regular nodes (black ticks)
-%    - Bearing nodes (purple markers)
-% 2. Component annotations:
-%    - Disk locations (D#)
-%    - Bearing types (B#/B# Loose)  
-%    - Intermediate bearings (IB#)
-%    - Rub impacts (Rub#)
-% 3. Automatic layout adjustment for multi bearings
+% 1. Node Classification:
+%    - Key nodes: Red circles
+%    - Regular nodes: Black vertical ticks
+%    - Bearing mass nodes: Purple markers
+% 2. Component Markers:
+%    - Disks: 'D#'
+%    - Bearings: 'B#'
+%    - Loose bearings: 'B# Loose'
+%    - Intermediate bearings: 'IB#'
+%    - Rub impacts: 'Rub#'
+%    - Coupling misalignments: 'CpMis#'
+% 3. Intelligent Layout:
+%    - Automatic y-offset for overlapping bearings
+%    - Context-aware legend generation
+% 4. Formatting Standards:
+%    - IEEE-compliant font (Times New Roman)
+%    - Optimized dimensions for publications
+%
+%% Annotation System
+% 1. Node Identification:
+%    - Node IDs below shaft line
+% 2. Component Tagging:
+%    - Component tags above shaft line
+% 3. Legend Categories:
+%    * Geometric Markers:
+%       - Key node ○
+%       - Regular node │
+%       - Bearing mass △
+%       - Intermediate bearing ◊
+%    * Component Tags:
+%       - D: Disk
+%       - B: Bearing
+%       - IB: Inter-shaft bearing
+%       - Rub: Rub impact
+%       - CpMis: Coupling misalignment
+%       - B Loose: Loose bearing
 %
 %% Example
 % % Generate and view mesh diagrams
-% Params = meshModel(baseParams);
-% plotMesh(Params); 
+% sysConfig = meshModel(baseParams);
+% plotMesh(sysConfig); 
 % winopen('meshDiagram/MeshResultOfShaft1.png');
 %
+%% Implementation Details
+% 1. Directory Management:
+%   * Creates 'meshDiagram' directory
+%   * Clears previous outputs
+% 2. Per-Shaft Processing:
+%   * Generates separate figures for each shaft
+% 3. Layer Creation:
+%   * Main shaft visualization layer
+%   * Dedicated legend layer
+% 4. Dynamic Positioning:
+%   * Automatic spacing for multi-bearing nodes
+%   * Adaptive vertical scaling
+% 5. Output Optimization:
+%   * Resolution-independent vector formats (.fig)
+%   * Publication-ready raster formats (.png)
+%
 %% See Also
-% meshModel, plotModel, establishModel
+% meshModel, plot2DStandard, femShaft
 %
 % Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
 % This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.

@@ -1,69 +1,108 @@
-%--------------------------------------------------------------------------
-% Function: get_fft_components
-% Description:
-%   This function extracts the frequency components related to the rotation 
-%   speed from the vibration displacement signal in the time domain. 
-%   For example, 1X represents the FFT component corresponding to the 
-%   rotational speed, and 2X is twice that value.
+%% get_fft_components - Extract rotation-related frequency components from vibration signals
 %
-% Inputs:
-%   - time_signal: 
-%       The signal to be processed in the time domain. It can be a vector 
-%       or a matrix. If it is a matrix, the function will automatically 
-%       identify the dimensions. Signals can be arranged as columns or rows 
-%       in the matrix, and the function will return the correct result. 
-%       For instance, if time_signal is a 4x10000 matrix, 4 different signals 
-%       are saved in each row.
-%   - time: 
-%       A vector representing the time series.
-%   - tk: 
-%       A vector containing the start time of each pulse in the tacho signal.
+% This function extracts specific frequency components related to rotational 
+% speed from vibration signals in the time domain, such as 1X (synchronous), 
+% 2X (twice rotational speed), etc. The analysis is performed in the angular 
+% domain for accurate speed-dependent frequency tracking.
 %
-% Optional Inputs:
-%   - components_index: 
-%       Default value is 1. It can be a vector specifying the output FFT 
-%       components. For example, if you want to get 1X, 3X, 6X, 10X components, 
-%       set components_index to [1 3 6 10].
-%   - NameValue: 
-%       A structure with the following name - value pairs:
-%       - output_type: 
-%           Default value is 'time'. It specifies the output type. 
-%           Valid values are 'time' (output in the time domain), 
-%           'rpm' (output in angular speed (rpm)), and 'rev' (output with respect to the number of revolutions).
-%       - is_plot_result: 
-%           Default value is false. If set to true, n figures will be generated, 
-%           where n is the number of input signals. These figures show the 
-%           different FFT components as specified by components_index.
-%       - base_frequency_denominator: 
-%           Default value is 1. It is a scalar. If you set base_frequency_denominator = n 
-%           and components_index = [1 3 6 10], you will get (1/n)X, (3/n)X, 
-%           (6/n)X, (10/n)X FFT components.
+%% Syntax
+%  [X, x_axis] = get_fft_components(time_signal, time, tk, components_index)
+%  [X, x_axis] = get_fft_components(..., components_index, Name, Value)
 %
-% Outputs:
-%   - X: 
-%       A n x 1 cell array, where n is the number of input signals. 
-%       For example, if time_signal is a 4x10000 matrix, n = 4. 
-%       Each element of X is an a x b matrix, where one of [a, b] is the 
-%       length of components_index. For instance, if time_signal is a 
-%       4x10000 matrix and components_index = [1 3 6 10 11], a = 5, b = 10000; 
-%       if time_signal is a 10000x4 matrix and components_index = [1 3 6 10 11 13], 
-%       a = 10000, b = 6.
-%   - x_axis: 
-%       A vector corresponding to each element in X. Depending on the 'output_type':
-%       - If 'output_type' is 'time', it represents the time series.
-%       - If 'output_type' is 'rpm', it represents the angular speed in rpm.
-%       - If 'output_type' is 'rev', it represents the number of revolutions.
+%% Input Arguments
+% * |time_signal| - Time-domain vibration signals:
+%   * Matrix or vector (n_signals × n_samples or n_samples × n_signals)
+%   * Signal orientation automatically detected
+% * |time| - Time vector corresponding to the signals [1×n_samples]
+% * |tk| - Tacho pulse timestamps (start times of rotation periods) [vector]
+% * |components_index| - (Optional) Frequency component indices [vector]:
+%   * Default: 1 (1X component)
+%   * Example: [1 3 6 10] for 1X,3X,6X,10X
 %
-% Example:
-%   [X, x_axis] = get_fft_components(time_signal, time, tk, [1 3 6], ...
-%       'output_type', 'rpm', 'is_plot_result', true, 'base_frequency_denominator', 2);
+%% Name-Value Pair Arguments
+% * |'output_type'| - Output format specification [string]:
+%   * |'time'|: Time-domain output (default)
+%   * |'rpm'|: Rotational speed (RPM) domain
+%   * |'rev'|: Revolution count domain
+% * |'is_plot_result'| - Result visualization flag [logical]:
+%   * |false|: No plots (default)
+%   * |true|: Generate component plots
+% * |'base_frequency_denominator'| - Frequency scaling factor [scalar]:
+%   * Default: 1 (standard harmonics)
+%   * Example: 2 with [1 3 5] → 1/2X, 3/2X, 5/2X
 %
-% Notes:
-%   - This function assumes that the input signals are properly sampled and 
-%     the time series is consistent with the signal data.
-%   - The function uses interpolation to map the results from the angular 
-%     domain to the time domain when 'output_type' is 'time'.
-%--------------------------------------------------------------------------
+%% Output Arguments
+% * |X| - Frequency component data [cell array]:
+%   * Size: {n_signals × 1}
+%   * Elements: (n_components × n_points) matrices
+%   * Contains complex FFT amplitudes
+% * |x_axis| - Corresponding x-axis values [vector]:
+%   * Time [s] for |'time'| output
+%   * Rotational speed [RPM] for |'rpm'| output
+%   * Revolution count for |'rev'| output
+%
+%% Algorithm
+% 1. Angular Domain Transformation:
+%    * Resamples signals to constant angular increments
+%    * Uses tacho pulses for angular position mapping
+% 2. Revolution Segmentation:
+%    * Divides angular signals into complete revolutions
+%    * Accounts for |base_frequency_denominator| groupings
+% 3. Order Domain Analysis:
+%    * Computes FFT on angular-domain segments
+%    * Extracts specified harmonic components
+% 4. Domain Mapping:
+%    * Interpolates angular results back to:
+%        - Time domain (piecewise cubic interpolation)
+%        - RPM domain (average speed calculation)
+%        - Revolution count domain
+%
+%% Physical Interpretation
+% * |X|: Complex amplitudes of vibration components
+% * |x_axis|: Reference coordinate system for component evolution
+%
+%% Example
+% % Analyze multi-sensor vibration data
+% time = linspace(0, 10, 10000); % Time vector
+% tk = 0:0.1:10;                 % Tacho pulses (10Hz rotation)
+% vib_data = randn(3, 10000);    % 3 vibration signals
+% components = [1, 2, 3.5];      % 1X, 2X, 3.5X components
+% 
+% % Extract components in RPM domain with plots
+% [X_components, rpm] = get_fft_components(vib_data, time, tk, components, ...
+%     'output_type', 'rpm', ...
+%     'is_plot_result', true, ...
+%     'base_frequency_denominator', 1);
+%
+% % Extract sub-harmonic components
+% [X_sub, revs] = get_fft_components(vib_data, time, tk, [1, 2], ...
+%     'output_type', 'rev', ...
+%     'base_frequency_denominator', 2); % Extracts 0.5X and 1X
+%
+%% Advantages
+% * Speed-dependent frequency tracking
+% * Sub-harmonic component analysis
+% * Multiple visualization domains
+% * Automatic signal orientation detection
+%
+%% Notes
+% * Requires uniform time sampling
+% * Tacho pulses must cover entire signal duration
+% * Maintains phase information in complex outputs
+% * Non-integer harmonics supported
+%
+%% References
+% 1. Bonnardot et al., "Use of the acceleration signal of a gearbox 
+%    in order to perform angular resampling," Mechanical Systems and 
+%    Signal Processing, 2005.
+% 2. Potter, R., "A New Order Tracking Method," Sound and Vibration, 1990.
+%
+%% See Also
+% time2angular, fft, interp1
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function [X, x_axis] = get_fft_components(time_signal, time, tk, components_index, NameValue)
 

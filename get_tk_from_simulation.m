@@ -1,39 +1,103 @@
-%{
-================================================================================
-Function Name:
-    get_tk_from_simulation
-
-Description:
-    This function computes the time points (tk) corresponding to each full revolution 
-    of a rotating system based on the given rotational phase (omega) and time data. 
-    It also offers an option to eliminate low - speed regions at the start and end 
-    of the calculated time series.
-
-Inputs:
-    - omega: A matrix or vector representing the rotational phase of the rotating system 
-             over time. Each row corresponds to a different signal if it's a matrix. 
-             The values are in radians.
-    - time: A matrix or vector containing the time instants corresponding to the 
-            rotational phase data. It must have the same dimensions as the 'omega' input.
-    - NameValue: A structure with the following optional fields:
-        - is_delete_low_speed_points: A logical value (default is false). If set to true, 
-                                      the function will remove low - speed regions at the 
-                                      start and end of the calculated time series.
-        - low_speed_threshold: A numerical value (default is 2*pi). Points with rotational 
-                               speeds below this threshold are considered low - speed points.
-
-Outputs:
-    - tk: A cell array where each element stores the time points corresponding to 
-          the completion of each revolution for the respective input signal. The size 
-          of the cell array is equal to the number of rows in the 'omega' input.
-
-Notes:
-    - The interpolation method used is cubic interpolation via the 'interp1' function. 
-      This might lead to non - physical results in some cases, so use with caution.
-    - The function assumes that the input data does not contain NaN or Inf values. 
-      It only checks the dimensional consistency of 'omega' and 'time'.
-================================================================================
-%}
+%% get_tk_from_simulation - Calculate rotation period timestamps from phase data
+%
+% This function computes the time points (tk) corresponding to each full revolution 
+% of a rotating system based on rotational phase (omega) and time data. 
+% It identifies the completion of each rotational cycle and optionally filters 
+% low-speed regions at the start and end of the time series.
+%
+%% Syntax
+%  tk = get_tk_from_simulation(omega, time)
+%  tk = get_tk_from_simulation(omega, time, NameValues)
+%
+%% Description
+% |get_tk_from_simulation| determines the precise moments when a rotating 
+% system completes full revolutions (2π radians). The function:
+% * Converts continuous phase data into discrete revolution events
+% * Handles multiple signal channels simultaneously
+% * Supports optional low-speed region filtering
+% * Uses interpolation for accurate timestamp calculation
+%
+%% Input Arguments
+% * |omega| - Rotational phase data [matrix or vector]:
+%   * Values represent angular position in radians
+%   * Matrix dimensions: n_signals × n_samples
+%   * Vector for single signal: 1 × n_samples
+% * |time| - Corresponding time values [matrix or vector]:
+%   * Must match dimensions of |omega|
+%   * Time units: seconds or consistent units
+%
+%% Name-Value Pair Arguments
+% * |'is_delete_low_speed_points'| - Low-speed filter flag [logical]:
+%   * |false|: Keep all revolution points (default)
+%   * |true|: Remove start/end low-speed regions
+% * |'low_speed_threshold'| - Rotation speed threshold [rad/s]:
+%   * Points below threshold are considered low-speed
+%   * Default: 2π rad/s (1 revolution/second)
+%
+%% Output Arguments
+% * |tk| - Revolution timestamps [cell array]:
+%   * Size: n_signals × 1
+%   * Elements: Timestamps for each revolution (1 × rev_count vectors)
+%   * Units match input |time|
+%
+%% Algorithm
+% 1. Input Validation:
+%   * Checks dimension consistency
+%   * Handles signal orientation
+% 2. Revolution Identification:
+%   * Calculates revolution count from phase range
+%   * Defines phase targets at 2π intervals
+% 3. Timestamp Interpolation:
+%   * Uses spline interpolation for accurate timing
+%   * Formula: tk = interp1(ω(t), t, 2kπ + ω₀, 'spline')
+% 4. Low-Speed Filtering (Optional):
+%   * Detects consecutive low-speed points at start/end
+%   * Removes revolutions where rotational period exceeds threshold
+%
+%% Physical Interpretation
+% * |tk|: Times when rotating system completes integer revolutions
+% * Phase continuity: ω(tk) = 2kπ + ω₀ (mod 2π)
+% * Low-speed regions correspond to acceleration/deceleration phases
+%
+%% Implementation Notes
+% * Orientation Handling:
+%   * Automatically transposes row-dominant inputs
+% * Interpolation:
+%   * Uses spline interpolation for smooth phase transitions
+%   * May produce non-physical results with sparse data
+% * Low-Speed Filtering:
+%   * Threshold based on rotational period: 2π/Δt > threshold
+%   * Two-pass detection (start and end separately)
+%
+%% Example
+% % Generate phase data for constant rotation
+% time = 0:0.01:10;                 % Time vector (1001 points)
+% omega = 2*pi*10*time;             % Phase (10 rev/s)
+% 
+% % Calculate revolution timestamps
+% tk = get_tk_from_simulation(omega, time);
+% % Returns: { [0.1, 0.2, 0.3, ..., 10.0] } (100 timestamps)
+%
+% % With low-speed filtering
+% time = 0:0.01:10;                 % Time vector (1001 points)
+% omega = 0.5 * (2*pi*10)*time.^2;  % acceleration (10 rev/s^2)
+% tk_filtered = get_tk_from_simulation(omega, time, ...
+%     'is_delete_low_speed_points', true, ...
+%     'low_speed_threshold', 20*pi); % 10 rev/s threshold
+% % Returns same as above since no low-speed regions
+%
+%% Data Requirements
+% * Inputs must be finite and real-valued
+% * Phase should be monotonically increasing
+% * Time vector should be uniformly sampled for best accuracy
+% * Dimensional consistency between omega and time
+%
+%% See Also
+% interp1, diff, find, time2angular
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 function tk = get_tk_from_simulation(omega, time, NameValue)
 
 arguments

@@ -1,30 +1,79 @@
-%% findIndex
-% find the index of element in global matrix
+%% findIndex - Calculate global matrix indices for element assembly
+%
+% This function computes the global matrix indices for finite element 
+% assembly based on node positions and system DOF configuration.
+%
 %% Syntax
-% elementIndex = findIndex(positionNode,nodeDof)
+%  elementIndex = findIndex(positionNode, nodeDof)
+%
 %% Description
-% positionNode: is a column or n*2 matrix saving the nodes where elements 
-% are. 
-% 
-% (1)positionNode is column: the nodes where elements are. 
-% 
-% (2)positionNode is n*2 matrix: this element 
-% contains two nonadjacent nodes; the first column contains the first nodes 
-% and the second column contains the second nodes (for bearing-mass 
-% elemeents, intermediate elements; there are four matrix waiting for
-% putting into global matrix.
+% |findIndex| determines the global matrix indices where element matrices 
+% should be placed during finite element assembly. The function:
+% * Maps node positions to global DOF indices
+% * Supports both single-node and dual-node elements
+% * Generates index matrices for efficient matrix assembly
 %
-% nodeDof: is a array (the number of nodes  * 1) saving the dof of each 
-% node.
+%% Input Arguments
+% * |positionNode| - Node position specification:
+%   * Column vector: [n×1] - Node numbers for single-node elements
+%   * Matrix: [n×2] - Node pairs for dual-node elements
+%     - Column 1: First node numbers
+%     - Column 2: Second node numbers
 %
-% elementIndex: (1) is a n*2 matrix where each row indicates the index of
-% the element in the global matrix (when positionNode is a column);
-% (2) is a 2n * 4 matrix contains 4*n index:
+% * |nodeDof| - [m×1] DOF count per system node, m = total nodes
 %
-% elementIndex = [ index11, index12;...    element 1
-%                  index21, index22;...    element 1
-%                  index11, index12;...    element 2
-%                  index21, index22 ];     element 2
+%% Output Arguments
+% * |elementIndex| - Global matrix indices:
+%   * For single-node elements: [n×2] matrix where each row contains 
+%     [start_index, end_index] for the element
+%   * For dual-node elements: [2n×4] matrix organized as:
+%     Row 1 (element i): [start_node1, end_node1, start_node2, end_node2]
+%     Row 2 (element i): [start_node2, end_node1, start_node2, end_node2]
+%     ... continues for each element
+%
+%% Index Calculation Algorithm
+% 1. Single-node elements:
+%    index = Σ(nodeDof(1:k-1)) + 1, where k = node number
+% 2. Dual-node elements:
+%    * For each node pair (k1, k2):
+%        index1 = Σ(nodeDof(1:k1-1)) + 1
+%        index2 = Σ(nodeDof(1:k2-1)) + 1
+%    * Generates four index pairs per element
+%
+%% Implementation Notes
+% * Index calculation accounts for cumulative DOF
+% * Output format optimized for |addElementIn| function
+% * Supports efficient sparse matrix assembly
+%
+%% Example
+% % Single-node elements (e.g., concentrated masses)
+% nodes = [1; 3];
+% dofPerNode = [2; 2; 2; 2];
+% idx = findIndex(nodes, dofPerNode)
+% % Returns: [1,1; 5,5]
+%
+% % Dual-node elements (e.g., shaft elements)
+% nodePairs = [1,2; 2,3];
+% dofPerNode = [2;2;2];
+% idx = findIndex(nodePairs, dofPerNode)
+% % Returns: 
+% %   [1,1,1,3; 
+% %    3,1,3,3;
+% %    3,3,3,5;
+% %    5,3,5,5]
+%
+%% Application
+% Essential for:
+% * Finite element matrix assembly
+% * Connecting local element matrices to global system
+% * Handling complex node-element relationships
+%
+%% See Also
+% addElementIn, assembleLinear, femShaft, femDisk
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
 
 function elementIndex = findIndex(positionNode,nodeDof)
 
