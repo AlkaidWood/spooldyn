@@ -1,0 +1,198 @@
+%% inputIntermediateBearingAUV - Configure intermediate bearings with Hertzian contact for AUV propulsion system
+%
+% This function configures intermediate bearings between shafts in an AUV 
+% propulsion system, including optional Hertzian contact modeling for 
+% rotor dynamics analysis.
+%
+%% Syntax
+%  OutputParameter = inputIntermediateBearingAUV(InputParameter)
+%
+%% Description
+% |inputIntermediateBearingAUV| adds intermediate bearing configuration to 
+% existing AUV propulsion system parameters. It supports:
+% * Linear spring-damper connections between shafts
+% * Mass-spring chain connections
+% * Hertzian contact force modeling
+%
+% * Inputs:
+%   * |InputParameter| - Preconfigured system parameters structure from 
+%       |inputEssentialParameterAUV|
+%
+% * Outputs:
+%   * |OutputParameter| - Updated parameter structure with intermediate bearings
+%
+%% Intermediate Bearing Parameters (IntermediateBearing structure)
+% * amount              - Number of intermediate bearings (scalar)
+% * betweenShaftNo      - Connected shaft indices [n×2 matrix]
+% * dofOfEachNodes      - Degrees of freedom per node (column vector)
+% * positionOnShaftDistance - Mounting positions from shaft ends [n×2 matrix, m]
+% * isHertzian          - Hertzian contact activation flags (logical column)
+% * isHertzianTop       - Hertzian force position flags (logical column)
+% * stiffness           - Horizontal stiffness [N/m] (column vector)
+% * stiffnessVertical   - Vertical stiffness [N/m] (column vector)
+% * damping             - Horizontal damping [Ns/m] (column vector)
+% * dampingVertical     - Vertical damping [Ns/m] (column vector)
+% * mass                - Intermediate masses [kg] (column vector)
+% * rollerNum           - Number of rolling elements (column vector)
+% * radiusInnerRace     - Inner race radii [m] (column vector)
+% * radiusOuterRace     - Outer race radii [m] (column vector)
+% * innerShaftNo        - Shaft containing inner race (column vector)
+% * clearance           - Bearing clearances [m] (column vector)
+% * contactStiffness    - Hertzian stiffness [N/m^1.5] (column vector)
+% * coefficient         - Contact force exponent (column vector)
+%
+%% Model Configuration Rules
+% * Connection Types:
+%   * Basic Connection: Linear spring-damper between shafts
+%   * Mass-spring Chain: Multiple masses with sequential stiffness/damping
+%   * Hertzian Contact: Nonlinear force at specified connection point 
+%     (isHertzianTop=true for top connection, false for bottom)
+% * Automatic Sorting:
+%   * Shaft indices sorted in ascending order
+%   * Associated parameters reordered to maintain consistent configuration
+%
+%% System Flags
+% Automatically enables:
+% * |hasIntermediateBearing| in ComponentSwitch
+% * |hasHertzianForce| if any bearing has |isHertzian=true|
+%
+%% Example
+%   % Initialize AUV system parameters
+%   sysParams = inputEssentialParameterAUV();
+%   % Add intermediate bearings with Hertzian contact
+%   sysParams = inputIntermediateBearingAUV(sysParams);
+%
+%% See Also
+%  checkInputData, sortRowsWithShaftDis, inputEssentialParameterAUV
+%
+% Copyright (c) 2021-2025 Haopeng Zhang, Northwestern Polytechnical University, Politecnico di Milano
+% This code is licensed under the MIT License. See the LICENSE file in the project root for the full text of the license.
+%
+
+
+%%
+function OutputParameter = inputIntermediateBearingAUV(InputParameter)
+
+% typing the parameter about intermediate bearing
+IntermediateBearing.amount          = 3;
+% shaft no. connected by same bearing in row; different bearings in column
+IntermediateBearing.betweenShaftNo  =  [1, 2; 1, 2; 1, 2]; % n*2
+% dof
+IntermediateBearing.dofOfEachNodes =  [2; 2; 2];% if mass=0, dof must be 0. Now, only x and y directions are supported. So, here is 0 or 2
+% the same bearing in row; different bearings in column, n*2
+IntermediateBearing.positionOnShaftDistance = [0.1, 0; 0.8, 0.7; 1, 0.9]; % from the left end of the shaft
+IntermediateBearing.isHertzian      = [true; true; true]; % boolean
+IntermediateBearing.isHertzianTop   = [true; true; true];
+% M K C, elements in the same row: the MKC at the same position of the
+% shaft; mass(1,1) -> mass(1,n): 
+% the mass near the betweenShaftNo(:,1) -》the mass near the betweenShaftNo(:,2)
+% If isHertizian and no mass, the corresponding k c will be added in
+% global matrix normally; the model:
+% shaft1--Hertz+k1c1--shaft2;
+% If is no Hertzian and with mass: there are n mass in a row, and n+1 k c 
+% for a bearing; the model will be established as:
+% shaft1--k1c1--m1--k2c2--m2--k3c3--m3--k4c4- ...-mn--k(n+1)c(n+1)--shaft2;
+% If is no Hertzian and no mass, the k c will be added in global 
+% matrix normally; the model:
+% shaft1--k1c1--shaft2;
+% If isHertzian and with mass, the hertzian force will be added at the mass
+% in the first column (near the shaft); the model:
+% shaft1--Hertz+k1c1--m1--k2c2--m2--k3c3--m3--k4c4--mn--k(n+1)c(n+1)--shaft2; (isHertzianTop=true)
+% shaft1--k1c1--m1--k2c2--m2--k3c3--m3--k4c4--mn--Hertz+k(n+1)c(n+1)--shaft2; (isHertzianTop=false)
+IntermediateBearing.stiffness           =  [0, 1e7; 0, 1e7; 0, 1e7]; % N/m, in column, n*1
+IntermediateBearing.stiffnessVertical   =  [0, 1e7; 0, 1e7; 0, 1e7]; % N/m, in column, n*1
+IntermediateBearing.damping             =  [0, 0; 0, 0; 0, 0]; % N/s^2, in column, n*1
+IntermediateBearing.dampingVertical     =  [0, 0; 0, 0; 0, 0]; % N/s^2, in column, n*1
+IntermediateBearing.mass                =  [0.3; 0.3; 0.3]; % kg
+% if there is no Hertizan contact force, please set n*1 zero vector for following parameters, where n is the number of the intermediate bearing                                 
+IntermediateBearing.rollerNum        = [15; 15; 15];
+IntermediateBearing.radiusInnerRace = [15e-3; 15e-3; 15e-3]; % m
+IntermediateBearing.radiusOuterRace = [25e-3; 25e-3; 25e-3]; % m
+IntermediateBearing.innerShaftNo = [1; 1; 1]; % indicates Inner shaft No. 
+IntermediateBearing.clearance = [5e-6; 5e-6; 5e-6]; % m
+IntermediateBearing.contactStiffness = [13.34e9; 13.34e9; 13.34e9]; % N*m^-3/2
+IntermediateBearing.coefficient = [3/2; 3/2; 3/2]; % =3/2 in a ball bearing; = 10/9 in a roller bearing
+
+%%
+
+%check the input data
+if size(IntermediateBearing.betweenShaftNo, 2) ~= 2
+    error('IntermediateBearingH.betweenShaftNo must be a 2 column matrix')
+end
+               
+if size(IntermediateBearing.positionOnShaftDistance, 2) ~= 2
+    error('IntermediateBearingH.positionOnShaftDistance must be a 2 column matrix')
+end
+
+checkInputData(IntermediateBearing);
+
+%%
+
+% sort the betweenShaftNo and PositionOnShaftDistance (sort column)
+shaftNo = IntermediateBearing.betweenShaftNo; % short the variable
+position = IntermediateBearing.positionOnShaftDistance;
+for iBearing = 1:1:IntermediateBearing.amount
+    if shaftNo(iBearing,1)>shaftNo(iBearing,2)
+       % exchange the column 1 and column 2 in iBearing row 
+       temporary = shaftNo(iBearing,1);
+       shaftNo(iBearing,1) = shaftNo(iBearing,2);
+       shaftNo(iBearing,2) = temporary;
+       temporary = position(iBearing,1);
+       position(iBearing,1) = position(iBearing,2);
+       position(iBearing,2) = temporary;
+       IntermediateBearing.betweenShaftNo = shaftNo;
+       IntermediateBearing.positionOnShaftDistance = position;
+       % isHertzianTop, stiffness, damping, mass, dofOfEachNodes should be 
+       % updated, if iBearing has mass.
+       if sum(IntermediateBearing.mass(iBearing,:))
+            % adjust isHertzianTop
+            IntermediateBearing.isHertzianTop(iBearing) = ~IntermediateBearing.isHertzianTop(iBearing);
+            % adjust mass and dofOfEachNodes
+            colNum = size(IntermediateBearing.mass(iBearing,:),2); 
+            massHere = IntermediateBearing.mass(iBearing,:);
+            dofHere = IntermediateBearing.dofOfEachNodes(iBearing,:);
+            massHereNum = sum(massHere~=0);
+            massHere = massHere(1:massHereNum);
+            dofHere = dofHere(1:massHereNum);
+            massInv = flip(massHere);
+            dofInv = flip(dofHere);
+            IntermediateBearing.mass(iBearing,:) = [massInv, zeros(1,colNum-massHereNum)];
+            IntermediateBearing.dofOfEachNodes(iBearing,:) = [dofInv, zeros(1,colNum-massHereNum)];
+            % adjust stiffness and damping
+            colNum = size(IntermediateBearing.stiffness(iBearing,:),2);
+            kHere = IntermediateBearing.stiffness(iBearing,:);
+            kHereVertical = IntermediateBearing.stiffnessVertical(iBearing,:);
+            cHere = IntermediateBearing.damping(iBearing,:);
+            cHereVertical = IntermediateBearing.dampingVertical(iBearing,:);
+            kHereNum = massHereNum + 1;
+            kHere = kHere(1:kHereNum);
+            kHereVertical = kHereVertical(1:kHereNum);
+            cHere = cHere(1:kHereNum);
+            cHereVertical = cHereVertical(1:kHereNum);
+            kInv = flip(kHere);
+            kInvVertical = flip(kHereVertical);
+            cInv = flip(cHere);
+            cInvVertical = flip(cHereVertical);
+            IntermediateBearing.stiffness(iBearing,:) = [kInv, zeros(1,colNum-kHereNum)];
+            IntermediateBearing.stiffnessVertical(iBearing,:) = [kInvVertical, zeros(1,colNum-kHereNum)];
+            IntermediateBearing.damping(iBearing,:) = [cInv, zeros(1,colNum-kHereNum)];
+            IntermediateBearing.dampingVertical(iBearing,:) = [cInvVertical, zeros(1,colNum-kHereNum)];
+       end
+    end
+end
+% sort columns in struct
+IntermediateBearing = sortRowsWithShaftDis(IntermediateBearing);
+
+%%
+
+OutputParameter = InputParameter;
+OutputParameter.IntermediateBearing = IntermediateBearing;
+OutputParameter.ComponentSwitch.hasIntermediateBearing = true;
+if sum(IntermediateBearing.isHertzian)~=0
+    OutputParameter.ComponentSwitch.hasHertzianForce = true;
+end % end if
+end % for function inputIntermediateBearingHertz()
+
+
+
+
