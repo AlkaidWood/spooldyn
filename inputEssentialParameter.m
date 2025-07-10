@@ -43,6 +43,7 @@
 % * positionOnShaftDistance - Mounting positions from shaft ends [m] (column vector)
 % * density              - Material densities [kg/m³] (column vector)
 % * eccentricity         - Mass eccentricities [m] (column vector)
+% * eccentricityPhase    - the phase of Mass eccentricities [rad] (column vector)
 %
 %% Bearing Parameters (Bearing structure)
 % * amount                   - Number of bearings (scalar)
@@ -107,10 +108,10 @@ Shaft.rayleighDamping   = [35.261, 5.3309e-5]; % [alpha, beta] CShaft = alpha*(M
 % typing the parameter about running status
 Status.ratio            = [1.2]; % [v-shaft2/v-shaft1; v-shaft3/v-shaft1]
 Status.vmax             = 210; % rad/s, the maximum rotational speed for shaft 1
-Status.acceleration     = 21; % rad/s^2, acceleration of shaft 1
-Status.duration         = 10; % s, the duration of shaft 1 in vmax
-Status.isDeceleration   = false; % boolean, add a deceleration in status
-Status.vmin             = 0; % s, the minimum speed afterdeceleration
+Status.acceleration     = 50; % rad/s^2, acceleration of shaft 1
+Status.duration         = 5; % s, the duration of shaft 1 in vmax
+Status.isDeceleration   = true; % boolean, add a deceleration in status
+Status.vmin             = 100; % rad/s, the minimum speed afterdeceleration
 
 % (otherwise) you can define your own simulation status function
 % define your own function in calculateStatus() where the single time point
@@ -136,6 +137,7 @@ Disk.thickness          = [0.015*ones(1,4)]'; % m
 Disk.positionOnShaftDistance = 1e-3 * [173.5, 621.5, 150.5, 292.5]'; %from left end (m)
 Disk.density            = [7850*ones(1,4)]'; % kg/m^3
 Disk.eccentricity       = [0.0979e-3*ones(1,4)]'; % m
+Disk.eccentricityPhase  = [zeros(1,4)]'; % rad/s
 
 % check input
 checkInputData(Disk)

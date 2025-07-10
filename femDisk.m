@@ -34,6 +34,7 @@
 % * |Q|  % Unbalance force vector [n_total×1] (currently zeros)
 % * |Fg| % Gravity force vector [n_total×1]
 % * |E|  % Mass eccentricities [m] [N×1 vector]
+% * |EPhase| % Phase of mass eccentricities [rad] [N×1 vector]
 %   * n_total: Total DOF of rotor system = sum(nodeDof)
 %
 %% Matrix Assembly Process
@@ -94,7 +95,7 @@
 
 
 
-function [M, G, N, Q, Fg, E] = femDisk(Disk,nodeDof)
+function [M, G, N, Q, Fg, E, EPhase] = femDisk(Disk,nodeDof)
 
 
 % generate elements
@@ -103,13 +104,14 @@ Ge = cell(Disk.amount,1);
 Ne = cell(Disk.amount,1);
 Fge = cell(Disk.amount,1);
 E = zeros(Disk.amount,1);
+EPhase = zeros(Disk.amount,1);
 Temporary = rmfield(Disk,'amount'); % for extract part of data of Shaft
 
 for iDisk = 1:1:Disk.amount
     % get the information of ith Disk
     ADisk = getStructPiece(Temporary,iDisk,[]);
     % generate elements
-    [Me{iDisk}, Ge{iDisk}, Ne{iDisk}, Fge{iDisk}, E(iDisk)] = diskElement(ADisk); 
+    [Me{iDisk}, Ge{iDisk}, Ne{iDisk}, Fge{iDisk}, E(iDisk), EPhase(iDisk)] = diskElement(ADisk); 
 end
 
 %%

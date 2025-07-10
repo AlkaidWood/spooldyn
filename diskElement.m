@@ -30,6 +30,7 @@
 %           dynamic behavior
 % * |Fge| - Gravity force vector (4×1) [N]
 % * |Ee|  - Eccentricity force magnitude [N]
+% * |EePhase| - Phase of eccentricity [rad]
 %
 %% Physical Formulation
 % 1. Mass Calculation:
@@ -89,7 +90,7 @@
 %
 
 
-function [Me, Ge, Ne, Fge, Ee] = diskElement(ADisk)
+function [Me, Ge, Ne, Fge, Ee, EePhase] = diskElement(ADisk)
 
 % check the input
 fieldName = {'dofOfEachNodes', 'outerRadius', 'innerRadius', 'density', 'thickness'};
@@ -152,5 +153,8 @@ Fge = [0; -FgeTotal; 0; 0];
 
 % eccentricity
 Ee = m * eDisk;
+
+% eccentricity phase
+EePhase = ADisk.eccentricityPhase;
 
 end

@@ -44,6 +44,7 @@
 % * positionOnShaftDistance - Mounting positions from shaft ends [m] (column vector)
 % * density              - Material densities [kg/m³] (column vector)
 % * eccentricity         - Mass eccentricities [m] (column vector)
+% * eccentricityPhase    - the phase of Mass eccentricities [rad] (column vector)
 %
 %% Bearing Parameters (Bearing structure)
 % * amount                   - Number of bearings (scalar)
@@ -108,8 +109,8 @@ Shaft.rayleighDamping   = [0, 1e-4]; % [alpha, beta] CShaft = alpha*(MShaft+MDis
 
 % typing the parameter about running status
 Status.ratio            = []; % [v-shaft2/v-shaft1; v-shaft3/v-shaft1]
-Status.vmax             = 5000 / 60 * (2*pi); % rad/s, the maximum rotational speed for shaft 1
-Status.acceleration     = 50; % rad/s^2, acceleration of shaft 1
+Status.vmax             = 2000 / 60 * (2*pi); % rad/s, the maximum rotational speed for shaft 1
+Status.acceleration     = 0; % rad/s^2, acceleration of shaft 1
 Status.duration         = 10; % s, the duration of shaft 1 in vmax
 Status.isDeceleration   = false; % boolean, add a deceleration in status
 Status.vmin             = 0; % s, the minimum speed afterdeceleration
@@ -139,6 +140,7 @@ Disk.thickness          = [25, 25]' * 10^-3; % m
 Disk.positionOnShaftDistance = [200, 300]' *10^-3; %from left end (m)
 Disk.density            = 7850*ones(Disk.amount, 1); % kg/m^3
 Disk.eccentricity       = [0.2, 0.2]' * 1e-3; % m
+Disk.eccentricityPhase  = [pi/4, pi/2]'; % rad/s
 
 % check input
 checkInputData(Disk)
@@ -172,8 +174,8 @@ Bearing.dofOfEachNodes  = [0, 0]'; % if mass=0, dof must be 0
 Bearing.positionOnShaftDistance = [0, 500]' * 10^-3; % m
 Bearing.stiffness       = 1e8 * ones(Bearing.amount, 1); % N*m
 Bearing.stiffnessVertical = 1e8 * ones(Bearing.amount, 1); % N*m
-Bearing.damping         = 100 * ones(Bearing.amount, 1); % N*s/m
-Bearing.dampingVertical = 100 * ones(Bearing.amount, 1); % N*s/m
+Bearing.damping         = 10^5 * ones(Bearing.amount, 1); % N*s/m
+Bearing.dampingVertical = 10^5 * ones(Bearing.amount, 1); % N*s/m
 Bearing.mass            = [0, 0]'; % kg
 Bearing.isHertzian      = zeros(Bearing.amount, 1);
 

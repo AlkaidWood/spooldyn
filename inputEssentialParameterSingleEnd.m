@@ -45,6 +45,7 @@
 % * positionOnShaftDistance - Mounting positions from shaft ends [m] (column vector)
 % * density              - Material densities [kg/m³] (column vector)
 % * eccentricity         - Mass eccentricities [m] (column vector)
+% * eccentricityPhase    - the phase of Mass eccentricities [rad] (column vector)
 %
 %% Bearing Parameters (Bearing structure)
 % * amount                   - Number of bearings (scalar)
@@ -140,6 +141,7 @@ Disk.thickness          = [25]' * 10^-3; % m
 Disk.positionOnShaftDistance = [500]' *10^-3; %from left end (m)
 Disk.density            = 7850*ones(Disk.amount, 1); % kg/m^3
 Disk.eccentricity       = [0.2]' * 1e-3; % m
+Disk.eccentricityPhase  = zeros(Disk.amount, 1); % rad/s
 
 % check input
 checkInputData(Disk)

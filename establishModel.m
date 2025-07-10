@@ -60,6 +60,7 @@
 %       .unbalanceForce: vector           % Unbalance force vector (n×1)
 %       .gravity: vector                  % Gravity force vector (n×1)
 %       .eccentricity: vector             % Disk eccentricity vector (m×1)
+%       .eccentricityPhase: vector        % Phase of Disk eccentricity vector (m×1)
 %       .gyroscopic_with_domega: matrix   % Precomputed gyroscopic matrix (when applicable)
 %       .stiffnessLoosing: matrix         % Loosened bearing stiffness (if active)
 %       .dampingLoosing: matrix            % Loosened bearing damping (if active)
@@ -159,7 +160,7 @@ end
 %%
 
 % generate FEM matrices of disk 
-[MDisk, GDisk, NDisk, QDisk, FgDisk, EDisk] = femDisk( Parameter.Disk,...
+[MDisk, GDisk, NDisk, QDisk, FgDisk, EDisk, EDiskPhase] = femDisk( Parameter.Disk,...
                                                 [Parameter.Mesh.Node.dof] );
                              
 
@@ -253,6 +254,7 @@ Matrix.matrixN = N; % n*n
 Matrix.unblanceForce = Q; % n*1
 Matrix.gravity = Fg; % n*1
 Matrix.eccentricity = EDisk'; % 1*m, m is the number of disks
+Matrix.eccentricityPhase = EDiskPhase'; % rad, 1*m, m is the number of disks
 
 
 % pre-calculate G matrix to save time if accerleartion=0
