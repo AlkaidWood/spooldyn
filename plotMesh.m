@@ -300,9 +300,9 @@ for iShaft = 1:1:Shaft.amount
         xMark = xText;
         yMark = yText;
         % plot node name
-        text(mainAx, xText,yText,nodeNameB{iSegment}, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'cap')
+        text(mainAx, xText,yText,nodeNameB{iSegment}, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'top')
         % plot mark
-        plotBearingNodes = scatter(mainAx, xMark,yMark); hold on
+        plotBearingNodes = scatter(mainAx, xMark,yMark+0.05); hold on
         plotBearingNodes.SizeData = 45;
         plotBearingNodes.MarkerFaceColor = '#7E2F8E';
         plotBearingNodes.MarkerEdgeColor = '#7E2F8E';
@@ -361,9 +361,8 @@ for iShaft = 1:1:Shaft.amount
     hasInterBearing = sum(condition1 & condition2);
 
     % add here
-    % 确定文字图例项
     textLegends = {};
-    % 检查各组件是否存在
+
     hasDisk = any(~cellfun(@isempty, {NodeSegment.diskNo}));
     hasBearing = any(~cellfun(@isempty, {NodeSegment.bearingNo}));
     hasLoosingBearing = Parameter.ComponentSwitch.hasLoosingBearing;
@@ -372,7 +371,6 @@ for iShaft = 1:1:Shaft.amount
     hasCouplingMis = Parameter.ComponentSwitch.hasCouplingMisalignment;
     hasCustom = Parameter.ComponentSwitch.hasCustom;
     
-    % 添加存在的文字图例
     if hasDisk
         textLegends{end+1} = 'D: Disk';
     end
@@ -399,14 +397,12 @@ for iShaft = 1:1:Shaft.amount
     full_text = strjoin(textLegends, '       ');
 
     
-    % 绘制几何图例 (第一行)
     xlim(bottomAx, [-1,12])
     xPositions = 0;
     x_pos_gap = 1.5;
     x_text_gap = 0.1;
-    yPos = 0.75; % 第一行y位置
+    yPos = 0.75;
 
-    % 绘制关键节点图例
     s_key_point = scatter(bottomAx, xPositions, yPos);
     s_key_point.SizeData = 45;
     s_key_point.MarkerFaceColor = '#CA3636';
@@ -417,7 +413,6 @@ for iShaft = 1:1:Shaft.amount
             'VerticalAlignment', 'middle');
     xPositions = xPositions + x_pos_gap;
 
-    % 绘制普通节点图例
     if ~isempty(nodeWithoutKeyPoints)
         s_node = scatter(bottomAx, xPositions, yPos);
         s_node.SizeData = 45;
@@ -431,7 +426,6 @@ for iShaft = 1:1:Shaft.amount
         xPositions = xPositions + x_pos_gap;
     end
 
-    % 绘制普通轴承图例
     if hasOrdinaryBearing
         s_beairng = scatter(bottomAx, xPositions,yPos);
         s_beairng.SizeData = 45;
@@ -444,7 +438,6 @@ for iShaft = 1:1:Shaft.amount
         xPositions = xPositions + x_pos_gap + 0.5;
     end
     
-    % 绘制中介轴承图例
     if hasInterBearing
         s_interbeairng = scatter(bottomAx, xPositions,yPos);
         s_interbeairng.SizeData = 45;
@@ -459,9 +452,8 @@ for iShaft = 1:1:Shaft.amount
     
     
     
-    % 绘制文字图例 (第二行)
     xPositionsText = 0;
-    yPosText = 0.25; % 第二行y位置
+    yPosText = 0.25; 
     
     text(bottomAx, xPositionsText, yPosText, full_text, ...
         'HorizontalAlignment', 'left', ...
