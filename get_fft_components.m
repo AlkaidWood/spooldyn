@@ -91,12 +91,6 @@
 % * Maintains phase information in complex outputs
 % * Non-integer harmonics supported
 %
-%% References
-% 1. Bonnardot et al., "Use of the acceleration signal of a gearbox 
-%    in order to perform angular resampling," Mechanical Systems and 
-%    Signal Processing, 2005.
-% 2. Potter, R., "A New Order Tracking Method," Sound and Vibration, 1990.
-%
 %% See Also
 % time2angular, fft, interp1
 %

@@ -126,12 +126,12 @@ tk = cell(size(omega,1),1);
 for iSignal = 1:1:size(omega,1)
 
     % create angular domain
-    rev_num = floor(omega(iSignal,end)/(2*pi)); % number of revolution
-    thetaK = 0:2*pi:rev_num*2*pi; % end point of each period
+    rev_num = floor((omega(iSignal,end)-omega(iSignal,1))/(2*pi)); % number of revolution
+    thetaK = linspace(0,rev_num*2*pi,abs(rev_num)+1); % end point of each period
     thetaK = thetaK + omega(iSignal,1); % add the initial info
     
     % interpolation of time corresponding to thetaW
-    if rev_num>0
+    if abs(rev_num)>0
         tk_here = interp1(omega(iSignal,:),time(iSignal,:), thetaK,'spline');
     else
         tk_here = 0;
