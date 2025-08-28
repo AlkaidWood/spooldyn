@@ -668,7 +668,7 @@ if isSaveFig
         set(gcf,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
     end
     figName = [figureName, '.fig'];
-    savefig(figHandle,figName,'compact')
+    savefig(figHandle,figName)
 end
 
 if isSaveEps

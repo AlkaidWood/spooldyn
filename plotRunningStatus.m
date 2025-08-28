@@ -60,7 +60,7 @@
 %    * Creates separate figures for each parameter
 %    * Overlays all shafts on each plot
 % 4. Output Handling:
-%    * Saves figures in compact .fig format
+%    * Saves figures in .fig format
 %    * Closes figures after saving
 %
 %% Example
@@ -122,7 +122,7 @@ set(gcf, 'unit', 'centimeters', 'position', [5 12 15 8])
 % save figure
 set(gcf,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
 figureName2 = ['runningStatusDiagram/statusOfPhase', '.fig'];
-savefig(h1,figureName2,'compact')
+savefig(h1,figureName2)
 
 %%
 
@@ -139,7 +139,7 @@ set(gcf, 'unit', 'centimeters', 'position', [22 12 15 8])
 % save figure
 set(gcf,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
 figureName2 = ['runningStatusDiagram/statusOfSpeed', '.fig'];
-savefig(h2,figureName2,'compact')
+savefig(h2,figureName2)
     
 %%
 
@@ -156,7 +156,7 @@ set(gcf, 'unit', 'centimeters', 'position', [5 1.5 15 8])
 % save figure
 set(gcf,'Visible','off','CreateFcn','set(gcf,''Visible'',''on'')')
 figureName2 = ['runningStatusDiagram/statusOfAcceleration', '.fig'];
-savefig(h3,figureName2,'compact')
+savefig(h3,figureName2)
 
 close([h1 h2 h3])
 
