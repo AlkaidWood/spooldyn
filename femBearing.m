@@ -145,8 +145,7 @@ if ~isempty(normalBearingIndex)
     NormalBearing    = getStructPiece(Temporary,normalBearingIndex,[]);
     % check the number of input k and c 
     countk = sum(NormalBearing.stiffness ~= 0, 2);
-    countc = sum(NormalBearing.damping ~= 0, 2);
-    count = [countk; countc];
+    count = countk;
     if sum(count) ~= length(count)
         error('Too much stiffness or damping for a no mass bearing, please input one stiffness and damping for a no mass bearing.')  
     end
