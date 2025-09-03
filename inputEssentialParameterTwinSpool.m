@@ -143,23 +143,17 @@ end
 % If you choose to input the bearing parameter here, you should not use the
 % inputBearingHertz()
 % model: shaft--k1c1--mass--k2c2--basement
-% Bearing.amount          = 3;
-% Bearing.inShaftNo       = [1; 1; 2];
-% Bearing.dofOfEachNodes  = [2; 2; 2]; % if mass=0, dof must be 0 
-% Bearing.positionOnShaftDistance = 1e-3 * [176.5; 718.5; 343.5];
-% % stiffness = [bearing1_k1, bearing1_k2; bearing2_k1, bearing2_k2]
-% Bearing.stiffness       = [1e8, 1e8; 1e8, 1e8; 1e8, 1e8]; % N*m
-% % damping = [bearing1_c1, bearing1_c2; bearing2_c1, bearing2_c2]
-% Bearing.damping         = [300, 300; 300, 300; 300, 300]; % N*s/m
-% Bearing.mass            = [3; 3; 3]; % kg
 
 Bearing.amount          = 0;
 Bearing.inShaftNo       = [];
 Bearing.dofOfEachNodes  = []; % if mass=0, dof must be 0 
-Bearing.positionOnShaftDistance = [];
+Bearing.positionOnShaftDistance = []; % m
 Bearing.stiffness       = []; % N*m
+Bearing.stiffnessVertical = []; % N*m
 Bearing.damping         = []; % N*s/m
+Bearing.dampingVertical = []; % N*s/m
 Bearing.mass            = []; % kg
+Bearing.isHertzian      = [];
 
 checkInputData(Bearing)
 

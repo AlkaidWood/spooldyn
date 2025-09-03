@@ -15,7 +15,7 @@ Parameter = establishModel(InitialParameter); % this function will create the gl
 % generate dynamic equations
 generateDynamicEquation(Parameter); % function to generate the dynamic equations function file <dynamicEquation.m> in root folder
 
-% calculate response (set simulation time from 0 to 10 seconds, sampling frequency 2^15)
+% calculate response (set simulation time from 0 to 50 seconds, sampling frequency 2^14)
 [q, dq, t] = calculateResponse(Parameter, [0,50], 2^14, calculateMethod='ode15s'); % function to calculate the system response
 
 % signal post-processing

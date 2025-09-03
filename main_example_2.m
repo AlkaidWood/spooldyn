@@ -13,11 +13,15 @@ InitialParameter = inputIntermediateBearingTwinSpool(InitialParameter); % all in
 
 % establish model automatically
 Parameter = establishModel(InitialParameter); % this function will create the global matrices in workspace (check Parameter), model and mesh diagram in folders: <modelDiagram>, <meshDiagram>
+% % establish model manually
+% manualGrid{1} = [1,2,1,7,1,1,3]; % for shaft 1
+% manualGrid{2} = [1,3,4,3]; % for shaft 2
+% Parameter = establishModel(InitialParameter, "gridFineness", manualGrid);
 
 % generate dynamic equations
 generateDynamicEquation(Parameter); % function to generate the dynamic equations function file <dynamicEquation.m> in root folder
 
-% calculate response (set simulation time from 0 to 10 seconds, sampling frequency 2^15)
+% calculate response (set simulation time from 0 to 10 seconds, sampling frequency 2^14)
 [q, dq, t] = calculateResponse(Parameter, [0,10], 2^14, calculateMethod='ode15s'); % function to calculate the system response
 
 % signal post-processing

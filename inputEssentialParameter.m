@@ -92,32 +92,32 @@
 function InitialParameter = inputEssentialParameter()
 
 % typing the parameter about shaft
-Shaft.amount            = 2;
-Shaft.totalLength       = [865; 382]*10^-3; % all vectors in column (m)
-Shaft.dofOfEachNodes    = 4 * ones(Shaft.amount,1);
-Shaft.outerRadius       = [10; 32.5]*10^-3; % m
-Shaft.innerRadius       = [0; 20]*10^-3; % m
-Shaft.density           = 7850 * ones(Shaft.amount,1); % kg/m^3
-Shaft.elasticModulus    = 210e9 * ones(Shaft.amount,1); % Pa
-Shaft.poissonRatio      = 0.296 * ones(Shaft.amount,1);
+Shaft.amount            = [];
+Shaft.totalLength       = []; % all vectors in column (m)
+Shaft.dofOfEachNodes    = [];
+Shaft.outerRadius       = []; % m
+Shaft.innerRadius       = []; % m
+Shaft.density           = []; % kg/m^3
+Shaft.elasticModulus    = []; % Pa
+Shaft.poissonRatio      = [];
 checkInputData(Shaft)
-Shaft.rayleighDamping   = [35.261, 5.3309e-5]; % [alpha, beta] CShaft = alpha*(MShaft+MDisk) + beta*KShaft
+Shaft.rayleighDamping   = []; % [alpha, beta] CShaft = alpha*(MShaft+MDisk) + beta*KShaft
 
 %%
 
 % typing the parameter about running status
-Status.ratio            = [1.2]; % [v-shaft2/v-shaft1; v-shaft3/v-shaft1]
-Status.vmax             = 210; % rad/s, the maximum rotational speed for shaft 1
-Status.acceleration     = 50; % rad/s^2, acceleration of shaft 1
-Status.duration         = 5; % s, the duration of shaft 1 in vmax
-Status.isDeceleration   = true; % boolean, add a deceleration in status
-Status.vmin             = 100; % rad/s, the minimum speed afterdeceleration
+Status.ratio            = []; % [v-shaft2/v-shaft1; v-shaft3/v-shaft1]
+Status.vmax             = []; % rad/s, the maximum rotational speed for shaft 1
+Status.acceleration     = []; % rad/s^2, acceleration of shaft 1
+Status.duration         = []; % s, the duration of shaft 1 in vmax
+Status.isDeceleration   = []; % boolean, add a deceleration in status
+Status.vmin             = []; % rad/s, the minimum speed afterdeceleration
 
 % (otherwise) you can define your own simulation status function
 % define your own function in calculateStatus() where the single time point
 % is input, the output must be [acceleration, speed, angular] corresponding
 % to input time "tn"
-Status.isUseCustomize   = false;
+Status.isUseCustomize   = [];
 Status.customize        = @(tn) calculateStatus(tn);
 
 % check input
@@ -128,16 +128,16 @@ end
 %%
 
 % typing the parameter about disk
-Disk.amount             = 4;
-Disk.inShaftNo          = [1, 1, 2, 2]'; % disks in the i-th shaft
-Disk.dofOfEachNodes     = 4 * ones(Disk.amount,1);
-Disk.innerRadius        = [10, 10, 32.5, 32.5]' *10^-3; % m
-Disk.outerRadius        = [125, 125, 125, 125]' *10^-3; % m
-Disk.thickness          = [0.015*ones(1,4)]'; % m
-Disk.positionOnShaftDistance = 1e-3 * [173.5, 621.5, 150.5, 292.5]'; %from left end (m)
-Disk.density            = [7850*ones(1,4)]'; % kg/m^3
-Disk.eccentricity       = [0.0979e-3*ones(1,4)]'; % m
-Disk.eccentricityPhase  = [zeros(1,4)]'; % rad/s
+Disk.amount             = [];
+Disk.inShaftNo          = []; % disks in the i-th shaft
+Disk.dofOfEachNodes     = [];
+Disk.innerRadius        = []; % m
+Disk.outerRadius        = []; % m
+Disk.thickness          = []; % m
+Disk.positionOnShaftDistance = []; %from left end (m)
+Disk.density            = []; % kg/m^3
+Disk.eccentricity       = []; % m
+Disk.eccentricityPhase  = []; % rad/s
 
 % check input
 checkInputData(Disk)
@@ -156,7 +156,7 @@ end
 % inputBearingHertz()
 % model: shaft--k1c1--mass--k2c2--basement
 
-Bearing.amount          = 0;
+Bearing.amount          = [];
 Bearing.inShaftNo       = [];
 Bearing.dofOfEachNodes  = []; % if mass=0, dof must be 0 
 Bearing.positionOnShaftDistance = [];

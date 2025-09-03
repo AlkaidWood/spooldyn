@@ -73,17 +73,15 @@
 function OutputParameter = inputIntermediateBearing(InputParameter)
 
 % typing the parameter about intermediate bearing
-IntermediateBearing.amount          = 1;
+IntermediateBearing.amount          = [];
 % shaft no. connected by same bearing in row; different bearings in column
-IntermediateBearing.betweenShaftNo  =  [1, 2]; % n*2
+IntermediateBearing.betweenShaftNo  =  []; % n*2
 % dof
-IntermediateBearing.dofOfEachNodes =  [2];% if mass=0, dof must be 0 
+IntermediateBearing.dofOfEachNodes =  [];% if mass=0, dof must be 0 
 % the same bearing in row; different bearings in column, n*2
-IntermediateBearing.positionOnShaftDistance = 1e-3 *  [579.5, 382]; % from the left end of the shaft
-IntermediateBearing.isHertzian      = [true]; % boolean
-IntermediateBearing.isHertzianTop   = [true];
-% IntermediateBearing.isHertzian      = [false]; % boolean
-% IntermediateBearing.isHertzianTop   = [false];
+IntermediateBearing.positionOnShaftDistance = []; % from the left end of the shaft
+IntermediateBearing.isHertzian      = []; % boolean
+IntermediateBearing.isHertzianTop   = [];
 % M K C, elements in the same row: the MKC at the same position of the
 % shaft; mass(1,1) -> mass(1,n): 
 % the mass near the betweenShaftNo(:,1) -》the mass near the betweenShaftNo(:,2)
@@ -100,19 +98,19 @@ IntermediateBearing.isHertzianTop   = [true];
 % in the first column (near the shaft); the model:
 % shaft1--Hertz+k1c1--m1--k2c2--m2--k3c3--m3--k4c4--mn--k(n+1)c(n+1)--shaft2; (isHertzianTop=true)
 % shaft1--k1c1--m1--k2c2--m2--k3c3--m3--k4c4--mn--Hertz+k(n+1)c(n+1)--shaft2; (isHertzianTop=false)
-IntermediateBearing.stiffness           =  [100, 5e8]; % N/m, in column, n*1
-IntermediateBearing.stiffnessVertical   =  [200, 3e8]; % N/m, in column, n*1
-IntermediateBearing.damping             =  [800, 150]; % N/s^2, in column, n*1
-IntermediateBearing.dampingVertical     =  [500, 300]; % N/s^2, in column, n*1
-IntermediateBearing.mass                =  [0.0484]; % kg
+IntermediateBearing.stiffness           =  []; % N/m, in column, n*1
+IntermediateBearing.stiffnessVertical   =  []; % N/m, in column, n*1
+IntermediateBearing.damping             =  []; % N/s^2, in column, n*1
+IntermediateBearing.dampingVertical     =  []; % N/s^2, in column, n*1
+IntermediateBearing.mass                =  []; % kg
 % if there is no Hertizan contact force, please set n*1 zero vector for following parameters, where n is the number of the intermediate bearing                                 
-IntermediateBearing.rollerNum        = [13];
-IntermediateBearing.radiusInnerRace = [10e-3]; % m
-IntermediateBearing.radiusOuterRace = [23.5e-3]; % m
-IntermediateBearing.innerShaftNo = [1]; % indicates Inner shaft No. 
-IntermediateBearing.clearance = [7e-6]; % m
-IntermediateBearing.contactStiffness = [1.08e10]; % N*m^-3/2
-IntermediateBearing.coefficient = [3/2]; % =3/2 in a ball bearing; = 10/9 in a roller bearing
+IntermediateBearing.rollerNum        = [];
+IntermediateBearing.radiusInnerRace = []; % m
+IntermediateBearing.radiusOuterRace = []; % m
+IntermediateBearing.innerShaftNo = []; % indicates Inner shaft No. 
+IntermediateBearing.clearance = []; % m
+IntermediateBearing.contactStiffness = []; % N*m^-3/2
+IntermediateBearing.coefficient = []; % =3/2 in a ball bearing; = 10/9 in a roller bearing
 
 %%
 

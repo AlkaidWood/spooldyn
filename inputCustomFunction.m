@@ -66,8 +66,8 @@ function OutputParameter = inputCustomFunction(InputParameter)
 % to create nodes at the force position
 % -------------------------------------------------------------------------
 Custom.amount                  = 2;
-Custom.inShaftNo               = [1; 2];
-Custom.positionOnShaftDistance = [0.5; 0.2];
+Custom.inShaftNo               = [1; 1];
+Custom.positionOnShaftDistance = [20; 497.2]*1e-3;
 % -------------------------------------------------------------------------
 
 checkInputData(Custom);
