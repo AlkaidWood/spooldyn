@@ -33,9 +33,9 @@ SwitchFigure.saveEps            = false;
 signalProcessing(q, dq, t, Parameter, [0,50], 2^14, SwitchFigure)
 ```
 
-![example1-mesh](readme\example1\MeshResultOfShaft1.png)
+![example1-mesh](readme/example1/MeshResultOfShaft1.png)
 
-![example1-model](readme\example1\theWholeModel.png)
+![example1-model](readme/example1/theWholeModel.png)
 
 
 # Example 2: Twin-spool Rotor
@@ -73,15 +73,15 @@ SwitchFigure.saveEps            = false;
 signalProcessing(q, dq, t, Parameter, [0,10], 2^14, SwitchFigure)
 ```
 
-![example2-mesh1](readme\example2\MeshResultOfShaft1.png)
-![example2-mesh1](readme\example2\MeshResultOfShaft2.png)
+![example2-mesh1](readme/example2/MeshResultOfShaft1.png)
+![example2-mesh1](readme/example2/MeshResultOfShaft2.png)
 
 Model diagram of shaft 1
-![example2-model](readme\example2\diagramOfShaft1.png)
+![example2-model](readme/example2/diagramOfShaft1.png)
 Model diagram of shaft 2
-![example2-model](readme\example2\diagramOfShaft2.png)
+![example2-model](readme/example2/diagramOfShaft2.png)
 Model diagram of full rotor
-![example2-model](readme\example2\theWholeModel.png)
+![example2-model](readme/example2/theWholeModel.png)
 
 # Installation
 ## Install MATLAB
@@ -255,7 +255,7 @@ Note 3: `stiffness` denotes the stiffness in the horizontal direction; `stiffnes
 
 Note 4: The defined massless bearing elements in a single direction are shown below.
 
-<img src="readme\bearing_model\massless-bearing.png" width="100%" height="" />
+<img src="readme/bearing_model/massless-bearing.png" width="100%" height="" />
 
 **Case 2:** **Mass linear bearings with Hertzian contact** (in `inputBearingHertz()`):
 ```
@@ -286,7 +286,7 @@ Note 4: The equation for Hertzian contact can be found in the reference paper.
 
 Note 5: The configured bearing elements with mass in one direction are shown below.
 
-<img src="readme\bearing_model\mass-bearing.png" width="100%" height="" />
+<img src="readme/bearing_model/mass-bearing.png" width="100%" height="" />
 
 **Case 3:** **Mixed bearings** (in `inputBearingHertz()`):
 * Bearing 1: massless bearing
@@ -338,7 +338,7 @@ Note 3: Each row represents one bearing element. **Use zero-padding to match the
 
 Note 4: The configured mixed bearing elements in one direction are shown below.
 
-<img src="readme\bearing_model\mixed-bearing.png" width="100%" height="" />
+<img src="readme/bearing_model/mixed-bearing.png" width="100%" height="" />
 
 
 ### Inter-shaft Bearings
@@ -383,7 +383,7 @@ Note 2: The parameters `dofOfEachNodes`, `isHertzian`, `stiffness`, `damping`, a
 Note 3: The parameter `positionOnShaftDistance` is an n×2 matrix, where n is the number of inter-shaft bearings. The first column represents the distance from the left end of the first shaft to the connection point. The second column represents the distance from the left end of the second shaft to the connection point. The order of these shafts (first and second) corresponds to the order specified in `betweenShaftNo`.
 
 Note 4: The parameter `isHertzianTop` controls where the Hertzian contact force is applied within the mass-spring-damping chain.
-<img src="readme\inter_shaft_bearing_model\inter-shaft-bearing.png" width="100%" height="" />
+<img src="readme/inter_shaft_bearing_model/inter-shaft-bearing.png" width="100%" height="" />
 
 
 
@@ -495,8 +495,8 @@ manualGrid{1} = [1,2,1,7,1,1,3]; % for shaft 1
 manualGrid{2} = [1,3,4,3]; % for shaft 2
 Parameter = establishModel(InitialParameter, "gridFineness", manualGrid);
 ```
-<img src="readme\example2\MeshResultOfShaft1_manual_mesh.png" width="100%" height="" />
-<img src="readme\example2\MeshResultOfShaft2_manual_mesh.png" width="100%" height="" />
+<img src="readme/example2/MeshResultOfShaft1_manual_mesh.png" width="100%" height="" />
+<img src="readme/example2/MeshResultOfShaft2_manual_mesh.png" width="100%" height="" />
 
 Note 1: For manual mesh generation, `manualGrid` should be a cell array with dimensions n×1 or 1×n, where n is the number of shafts in the rotor system.
 
